@@ -740,8 +740,6 @@ img{max-width:100%}
 .brand .ball:before,.hav .ball:before{content:"";position:absolute;left:36%;right:36%;top:50%;height:8px;margin-top:-4px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.9) 0 2px,transparent 2px 5px)}
 .avatar{position:relative;overflow:hidden}
 .avatar .ini{font-style:normal}
-.avatar>img.hs{position:absolute!important;left:0;top:0;width:100%!important;height:100%!important;max-width:none;object-fit:cover!important;object-position:50% 12%;border-radius:0;transform:scale(1.18);transform-origin:50% 0}
-.avatar.has .ini{visibility:hidden}
 .avatar.xs{width:24px;height:24px;font-size:9px}
 .avatar.sm{width:30px;height:30px;font-size:11px}
 .avatar.md{width:40px;height:40px;font-size:14px}
@@ -1199,11 +1197,10 @@ const statsMap = (labels, vals) => { const m = {}; (labels || []).forEach((l, i)
 const scoreVal = sc => sc == null ? null : typeof sc === 'object' ? (sc.displayValue ?? sc.value) : sc;
 
 /* =====================================================================
-   NFL helpers: player headshots, weeks, quarters
+   NFL helpers: player avatars, weeks, quarters
    ===================================================================== */
-const HSF = id => `https://a.espncdn.com/i/headshots/nfl/players/full/${id}.png`;
 const initials = name => esc(String(name || '?').split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase());
-const avatar = (name, color, id, cls = '') => `<div class="avatar ${cls}" style="background:linear-gradient(160deg,${color || '#666'},rgba(0,0,0,.35))"><i class="ini">${initials(name)}</i>${id && /^\d+$/.test(String(id)) ? `<img class="hs" src="${HSF(id)}" alt="" loading="lazy" onload="this.parentNode.classList.add('has')" onerror="this.remove()">` : ''}</div>`;
+const avatar = (name, color, id, cls = '') => `<div class="avatar ${cls}" style="background:linear-gradient(160deg,${color || '#666'},rgba(0,0,0,.35))"><i class="ini">${initials(name)}</i></div>`;
 const shortNm = n => { const p = String(n || '').trim().split(/\s+/); return p.length > 1 ? `${p[0][0]}. ${p.slice(1).join(' ')}` : (n || ''); };
 const teamColor = id => hex(teamById(id)?.color);
 const fmtN = v => v == null || v === '' || isNaN(v) ? '—' : Number.isInteger(+v) ? (+v).toLocaleString() : (+v).toFixed(1);
@@ -1797,7 +1794,7 @@ function renderDetail() {
     if (rows) h += `<div class="section panel glass">${panelHead('Team stats', `${esc(aa)} vs ${esc(ha)}`, IC.st)}<div class="cmp">${rows}</div></div>`;
   }
 
-  // game leaders, with headshots
+  // game leaders
   const LD = Array.isArray(d.leaders) ? d.leaders : [];
   if (LD.length) {
     const byT = t => LD.find(x => String(x.team?.id) === String(t.team?.id));
