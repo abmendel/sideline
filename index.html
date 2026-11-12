@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sideline · Live Sports</title>
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#ecebf4;font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+  body.dark{background:#15141d}
+  iframe.sport{position:fixed;inset:0;width:100%;height:100%;border:0;display:none;background:transparent}
+  iframe.sport.on{display:block}
+  .boot{position:fixed;inset:0;display:grid;place-items:center;color:rgba(40,38,62,.55);font-size:14px;transition:opacity .25s}
+  body.dark .boot{color:rgba(236,234,255,.55)}
+  .boot.gone{opacity:0;pointer-events:none}
+  .boot i{display:block;width:34px;height:34px;margin:0 auto 12px;border-radius:50%;border:3px solid rgba(127,120,200,.25);border-top-color:#ff7f3f;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="boot" id="boot"><div><i></i>Loading scores…</div></div>
+<script>
+(() => {
+'use strict';
+/* =====================================================================
+   SPORTS REGISTRY
+   To add a sport: put its dashboard page in sports/ and add one line here.
+   Order here = order of the switcher pills (Alt+1, Alt+2… also switch).
+   ===================================================================== */
+const SPORTS = [
+  { id: 'nba', name: 'NBA', icon: '🏀', file: 'sports/nba.html' },
+  { id: 'nfl', name: 'NFL', icon: '🏈', file: 'sports/nfl.html' }
+];
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+};
+const frames = {};          // id -> iframe (created the first time a sport is opened, then kept alive)
+let current = null;
+let theme = store.get('hub.theme');
+const byId = id => SPORTS.find(s => s.id === id);
+const list = () => SPORTS.map(({ id, name, icon }) => ({ id, name, icon }));
+const applyShellTheme = () => document.body.classList.toggle('dark', theme === 'dark');
+applyShellTheme();
+
+function frameFor(id) {
+  if (frames[id]) return frames[id];
+  const s = byId(id), f = document.createElement('iframe');
+  f.className = 'sport'; f.title = `${s.name} dashboard`; f.src = s.file; f.dataset.sport = id;
+  f.addEventListener('load', () => { if (current === id) document.getElementById('boot').classList.add('gone'); }, { once: true });
+  document.body.appendChild(f);
+  return (frames[id] = f);
+}
+function show(id, fromHash) {
+  if (!byId(id)) id = SPORTS[0].id;
+  if (id === current) return;
+  current = id;
+  const f = frameFor(id);
+  Object.values(frames).forEach(x => x.classList.toggle('on', x === f));
+  document.title = `${byId(id).name} · Sideline`;
+  store.set('hub.sport', id);
+  if (!fromHash && location.hash.slice(1) !== id) { try { history.replaceState(null, '', '#' + id); } catch (e) { location.hash = id; } }
+  try { f.contentWindow && f.contentWindow.focus(); } catch (e) {}
+}
+const send = (f, msg) => { try { f.contentWindow.postMessage({ hub: 1, ...msg }, '*'); } catch (e) {} };
+
+window.addEventListener('message', e => {
+  const d = e.data; if (!d || !d.hub) return;
+  const f = Object.values(frames).find(x => x.contentWindow === e.source); if (!f) return;
+  if (d.type === 'hello') {                       // a sport page finished loading: give it the switcher list
+    send(f, { type: 'sports', list: list(), current: f.dataset.sport });
+    if (theme) send(f, { type: 'theme', tv: theme });
+    if (f.dataset.sport === current) document.getElementById('boot').classList.add('gone');
+  }
+  if (d.type === 'switch' && byId(d.id)) show(d.id);
+  if (d.type === 'theme' && (d.tv === 'light' || d.tv === 'dark') && d.tv !== theme) {   // keep light/dark in sync across sports
+    theme = d.tv; store.set('hub.theme', theme); applyShellTheme();
+    Object.values(frames).forEach(x => { if (x !== f) send(x, { type: 'theme', tv: theme }); });
+  }
+});
+window.addEventListener('hashchange', () => show(location.hash.slice(1), true));
+
+show(byId(location.hash.slice(1)) ? location.hash.slice(1) : byId(store.get('hub.sport')) ? store.get('hub.sport') : SPORTS[0].id);
+})();
+</script>
+</body>
+</html>
