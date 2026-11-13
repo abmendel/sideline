@@ -1,10 +1,10 @@
 # Sideline · Live Sports
 
-Live NBA, NFL, MLB and NHL dashboards in one site, with a sport switcher in the header.
+Live NBA, NFL, MLB, NHL and soccer dashboards in one site, with a sport switcher in the header.
 Data comes from ESPN's public feeds, loaded in the browser.
 
 - `index.html` – the hub: holds the list of sports and switches between them.
-- `sports/nba.html`, `sports/nfl.html`, `sports/mlb.html`, `sports/nhl.html` – one self-contained dashboard per sport.
+- `sports/nba.html`, `sports/nfl.html`, `sports/mlb.html`, `sports/nhl.html`, `sports/soccer.html` – one self-contained dashboard per sport.
 
 To add a sport: add its page under `sports/` and one line to the `SPORTS` list in `index.html`.
 
