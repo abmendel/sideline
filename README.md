@@ -8,7 +8,7 @@ Data comes from ESPN's public feeds, loaded in the browser.
 
 To add a sport: add its page under `sports/` and one line to the `SPORTS` list in `index.html`.
 
-Deployed on Netlify from this repository (no build step; publish directory is the repo root).
+Hosted free on GitHub Pages from the `main` branch (repo root, no build step): https://abmendel.github.io/sideline/
 
 ## Learning model
 
