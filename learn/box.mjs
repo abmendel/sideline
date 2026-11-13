@@ -117,7 +117,7 @@ function extract(kind, sm) {
 /* ---------- fill in a batch of games that have no box score yet (newest first) ---------- */
 export async function backfill(sp, S, store, fetchJSON, log, cap = 1200) {
   const kind = kindOf(S.path), box = await loadBox(sp);
-  const want = Object.entries(store.games).filter(([id, g]) => g.done && (!box[id] || (box[id].miss && box[id].miss < 3 && Date.now() - new Date(g.date) < 30 * 864e5))).sort((x, y) => new Date(y[1].date) - new Date(x[1].date)).slice(0, cap);
+  const want = Object.entries(store.games).filter(([id, g]) => g.done && (S.anyType || g.type === 2 || g.type === 3) && (!box[id] || (box[id].miss && box[id].miss < 3 && Date.now() - new Date(g.date) < 30 * 864e5))).sort((x, y) => new Date(y[1].date) - new Date(x[1].date)).slice(0, cap);
   let got = 0, odds = 0, i = 0;
   await Promise.all(Array.from({ length: 8 }, async () => {
     while (i < want.length) {
@@ -132,7 +132,7 @@ export async function backfill(sp, S, store, fetchJSON, log, cap = 1200) {
     }
   }));
   await saveBox(sp, box, store.games);
-  const total = Object.values(store.games).filter(g => g.done).length, have = Object.values(box).filter(b => b.t).length;
+  const total = Object.values(store.games).filter(g => g.done && (S.anyType || g.type === 2 || g.type === 3)).length, have = Object.values(box).filter(b => b.t).length;
   log(`${sp}: box scores ${have}/${total} games (+${got} this run, ${odds} with lines)`);
   return box;
 }
