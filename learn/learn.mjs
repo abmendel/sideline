@@ -71,7 +71,9 @@ function oddsOf(ev) {
   if (pH != null && pA != null && pD != null) { const t = pH + pA + pD; return { fairH: pH / t, fairD: pD / t, fairA: pA / t, mlH, mlD, mlA }; }
   return pH != null && pA != null ? { fairH: pH / (pH + pA), mlH, mlA } : null;
 }
-const calDates = cal => (cal || []).flatMap(x => typeof x === 'string' ? [x] : x?.startDate ? [x.startDate] : x?.value && /^\d{4}-/.test(x.value) ? [x.value] : []).map(dayOf);
+// Tournaments (Champions League) list stages with a start and end date instead of match days: walk every day in the stage.
+const spanDays = (a, b) => { const out = [], d = new Date(String(a).slice(0, 10) + 'T12:00:00Z'), e = new Date(String(b).slice(0, 10) + 'T12:00:00Z'); for (let i = 0; d <= e && i < 400; i++, d.setUTCDate(d.getUTCDate() + 1)) out.push(d.toISOString()); return out; };
+const calDates = cal => (cal || []).flatMap(x => typeof x === 'string' ? [x] : x?.startDate && x?.endDate && x.startDate.slice(0, 10) !== x.endDate.slice(0, 10) ? spanDays(x.startDate, x.endDate) : x?.startDate ? [x.startDate] : x?.value && /^\d{4}-/.test(x.value) ? [x.value] : []).map(dayOf);
 // Some leagues (MLB) send a blacklist: the calendar lists the days WITHOUT games between calendarStartDate and calendarEndDate.
 function leagueDays(lg) {
   const listed = calDates(lg?.calendar);
