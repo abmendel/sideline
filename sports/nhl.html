@@ -1306,8 +1306,10 @@ const LEARN = { model: null, loading: null, at: 0 };
 function loadLearned() {
   if (LEARN.at && Date.now() - LEARN.at < 36e5) return Promise.resolve(LEARN.model);
   if (LEARN.loading) return LEARN.loading;
-  LEARN.loading = fetch(`../data/model-${SPORTX.id}.json`, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null)
-    .then(m => { LEARN.loading = null; LEARN.at = Date.now(); if (m && Array.isArray(m.w) && m.teams) LEARN.model = m; return LEARN.model; });
+  // the site's own copy, plus the repo's latest (so copies hosted elsewhere still get the nightly model); newest wins
+  const get = u => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  LEARN.loading = Promise.all([get(`../data/model-${SPORTX.id}.json`), get(`https://raw.githubusercontent.com/abmendel/sideline/main/data/model-${SPORTX.id}.json`)])
+    .then(list => { const ok = list.filter(m => m && Array.isArray(m.w) && m.teams).sort((a, b) => new Date(b.updated) - new Date(a.updated)); LEARN.loading = null; LEARN.at = Date.now(); if (ok[0]) LEARN.model = ok[0]; return LEARN.model; });
   return LEARN.loading;
 }
 function loadModelBase() { return Promise.all([loadModelBaseRaw(), loadLearned()]).then(([b]) => b); }
