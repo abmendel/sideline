@@ -1,6 +1,6 @@
 // temporary: print the shape of ESPN data for past games (deleted after the model upgrade)
 const get = async u => { try { const r = await fetch(u); return r.ok ? await r.json() : { _status: r.status }; } catch (e) { return { _err: e.message }; } };
-const cut = (v, n = 2500) => { const s = JSON.stringify(v); return s.length > n ? s.slice(0, n) + '…' : s; };
+const cut = (v, n = 2500) => { const s = JSON.stringify(v) ?? "undefined"; return s.length > n ? s.slice(0, n) + '…' : s; };
 const strip = (o, depth = 0) => { if (Array.isArray(o)) return o.slice(0, 3).map(x => strip(x, depth + 1)); if (o && typeof o === 'object') { const r = {}; Object.entries(o).forEach(([k, v]) => { if (/^(links|logos?|headshot|\$ref|uid|guid|images?|alternateIds)$/.test(k)) return; r[k] = depth > 6 ? (typeof v === 'object' ? '[obj]' : v) : strip(v, depth + 1); }); return r; } return o; };
 const S = { nba: ['basketball/nba', '20260115'], nfl: ['football/nfl', '20251109'], mlb: ['baseball/mlb', '20250715'], nhl: ['hockey/nhl', '20260115'], epl: ['soccer/eng.1', '20260117'] };
 for (const [k, [p, d]] of Object.entries(S)) {
