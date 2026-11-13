@@ -2247,7 +2247,7 @@ function renderDetail() {
   const wpArr = d.winprobability || [];
   if (dOdds) {
     const wpNow = wpArr.slice(-1)[0]?.homeWinPercentage;
-    h += `<div class="section panel glass">${panelHead('Betting odds', `${esc(dOdds.provider)}${st === 'in' ? ' · latest posted line' : st === 'post' ? ' · closing line' : ''}`, IC.$, dOdds.link && st !== 'post' ? `<span class="spacer"></span><a class="pillbtn glass sm" href="${esc(dOdds.link)}" target="_blank" rel="noopener">View on DraftKings ↗</a>` : '')}
+    h += `<div class="section panel glass">${panelHead('Betting odds', `${esc(dOdds.provider)}${st === 'in' ? ' · pre-game line (live line above)' : st === 'post' ? ' · closing line' : ''}`, IC.$, dOdds.link && st !== 'post' ? `<span class="spacer"></span><a class="pillbtn glass sm" href="${esc(dOdds.link)}" target="_blank" rel="noopener">View on DraftKings ↗</a>` : '')}
       <div class="oddsgrid">
         <div class="tile"><div class="k">Run line</div><div class="v">${esc(spreadText(dOdds, ha, aa))}</div><div class="s">${dOdds.spHo != null ? `Opened ${esc(fmtSp(dOdds.spHo))} ${moveTag(dOdds.spH, dOdds.spHo)}` : dOdds.spHodds != null ? `${esc(fmtAm(dOdds.spAodds))} / ${esc(fmtAm(dOdds.spHodds))}` : ''}</div></div>
         <div class="tile"><div class="k">Moneyline</div><div class="v">${esc(fmtAm(dOdds.mlA))} / ${esc(fmtAm(dOdds.mlH))}</div><div class="s">${esc(aa)} / ${esc(ha)}${dOdds.mlHo != null ? ` · opened ${esc(fmtAm(dOdds.mlAo))} / ${esc(fmtAm(dOdds.mlHo))}` : ''}</div></div>

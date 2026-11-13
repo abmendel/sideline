@@ -2080,7 +2080,7 @@ function renderDetail() {
   if (o) {
     const ha = tAbbr(home.team), aa = tAbbr(away.team);
     const mv = (now, open) => now != null && open != null && Math.abs(now - open) >= .01 ? ` <span class="${now > open ? 'pos' : 'neg'}">${now > open ? '▲' : '▼'} ${Math.round(Math.abs(now - open) * 100)}</span>` : '';
-    h += `<div class="section panel glass">${panelHead('Betting odds', `${esc(o.provider)} · three-way moneyline${st === 'post' ? ' · closing line' : ''}`, IC.$, o.link && st !== 'post' ? `<span class="spacer"></span><a class="pillbtn glass sm" href="${esc(o.link)}" target="_blank" rel="noopener">View on DraftKings ↗</a>` : '')}
+    h += `<div class="section panel glass">${panelHead('Betting odds', `${esc(o.provider)} · three-way moneyline${st === 'post' ? ' · closing line' : st === 'in' ? ' · pre-match line (live line above)' : ''}`, IC.$, o.link && st !== 'post' ? `<span class="spacer"></span><a class="pillbtn glass sm" href="${esc(o.link)}" target="_blank" rel="noopener">View on DraftKings ↗</a>` : '')}
       <div class="three">
         <div class="tile"><div class="k">${esc(ha)} win</div><div class="v">${esc(fmtAm(o.h))}</div><div class="s">Fair ${pct(o.fairH)}${mv(o.fairH, o.ofH)}${o.ho != null ? ` · opened ${esc(fmtAm(o.ho))}` : ''}</div></div>
         <div class="tile"><div class="k">Draw</div><div class="v">${esc(fmtAm(o.d))}</div><div class="s">Fair ${pct(o.fairD)}${mv(o.fairD, o.ofD)}${o.dop != null ? ` · opened ${esc(fmtAm(o.dop))}` : ''}</div></div>
