@@ -2949,7 +2949,7 @@ function openSettings() {
       <div class="setsec"><h4>Scores page layout</h4><p class="sub" style="margin:-4px 0 10px">Reorder or hide the top panels. On a computer you can also drag them by the ⋮⋮ handle.</p>
         ${SET.layout.map((k, i) => `<div class="layoutrow"><span class="nm2">${SEC_NAMES[k]}</span><button class="mini" data-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="mini" data-down="${i}" ${i === SET.layout.length - 1 ? 'disabled' : ''}>↓</button>
           <button class="toggle ${SET.hidden.includes(k) ? '' : 'on'}" style="width:auto" data-vis="${k}"><span class="switch"></span></button></div>`).join('')}</div>
-      <div class="setsec"><h4>Your data</h4><p class="sub" style="margin:-4px 0 10px">Favorites, your own picks and settings live in this browser — copy them to move them. The model’s picks, pick of the day and parlays are recorded on the site.</p>
+      <div class="setsec"><h4>Your data</h4><p class="sub" style="margin:-4px 0 10px">Favorites and settings live in this browser — copy them to move them. Your picks can sync to every device from the Picks tab, and the model’s picks are recorded on the site.</p>
         <textarea class="dataarea" id="dataOut" readonly>${esc(JSON.stringify({ favorites: FAV, picks: PICKS, dayPicks: DAYPICKS, settings: SET }))}</textarea>
         <div class="setrow" style="justify-content:flex-start;gap:8px"><button class="pillbtn glass sm" id="copyData">Copy</button></div>
         <textarea class="dataarea" id="dataIn" placeholder="Paste data from another browser here…"></textarea>
@@ -3159,7 +3159,7 @@ function ledgerRefreshViews() {
 }
 
 /* ---------- your own picks, synced by code ---------- */
-const FB = { key: '', project: '', doc: code => `https://firestore.googleapis.com/v1/projects/${FB.project}/databases/(default)/documents/sideline/${encodeURIComponent(code)}` };   // Sideline's own Firebase project (not set up yet: sync stays hidden)
+const FB = { key: 'AIzaSyA83tKndvueolUVwt8JVjY6QhnhVy7KhCo', project: 'sideline-d7fc1', doc: code => `https://firestore.googleapis.com/v1/projects/${FB.project}/databases/(default)/documents/sideline/${encodeURIComponent(code)}` };   // Sideline's own free Firebase project (sideline-d7fc1)
 const SYNCKEY = 'sideline.sync.code', TOMBKEY = `sideline.${SYNC_SPORT}.picks.removed.v1`;
 const SYNC = { code: null, status: 'off', at: 0, err: '', snap: {}, timer: null, busy: null, open: false };
 const TOMB = store.get(TOMBKEY, {});
