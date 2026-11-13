@@ -231,6 +231,53 @@ tr.po .seed{background:var(--acc);color:var(--acc-ink)}
 tr.pi .seed{background:var(--inv-bg);color:var(--inv-text)}
 tr.myteam td{background:rgba(var(--acc-rgb),.1)}
 .pos{color:var(--good)} .neg{color:var(--bad)}
+.betrec{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.betrec b{color:var(--text)}
+.betrec .dots{display:inline-flex;gap:4px}
+.betrec .dots i{width:9px;height:9px;border-radius:50%;display:inline-block;background:var(--bad)}
+.betrec .dots i.w{background:var(--good)}
+.dpres{display:flex}
+.dphist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.dprow{display:grid;grid-template-columns:110px 24px 1fr auto auto;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:rgba(var(--fg),.04);border:0;color:var(--text);font:inherit;font-size:13px;text-align:left;cursor:pointer}
+.dprow img{width:22px;height:22px}
+.dprow .d{color:var(--muted);font-size:12px}
+.dprow .p{font-variant-numeric:tabular-nums;color:var(--muted)}
+@media (max-width:640px){.dprow{grid-template-columns:80px 22px 1fr auto}.dprow .p{display:none}}
+.keys2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:640px){.keys2{grid-template-columns:1fr}}
+.keyhd{display:flex;align-items:center;gap:8px;font-weight:600;margin-bottom:8px;font-size:14px}
+.keyhd img{width:24px;height:24px}
+.keyit{padding:10px 12px;border-radius:14px;background:rgba(var(--fg),.045);margin-bottom:8px}
+.keyit b{display:block;font-weight:600;font-size:13.5px;margin-bottom:3px}
+.keyit p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+.kst{float:right;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:8px}
+.kst.ok{background:rgba(40,170,90,.16);color:var(--good)}
+.kst.no{background:rgba(225,60,60,.13);color:var(--bad)}
+.ins-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:16px}
+.ins-card{padding:14px 16px!important}
+.ins-card .t{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.ins-card .t i{font-style:normal}
+.ins-card .h{font-weight:600;font-size:16px;margin:8px 0 4px;display:flex;align-items:center;gap:8px}
+.ins-card .h img{width:26px;height:26px}
+.ins-card p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.45}
+.ins-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:16px}
+@media (max-width:980px){.ins-grid{grid-template-columns:1fr}}
+.insplot{width:100%;height:auto;display:block;color:var(--text)}
+.insplot .avg{stroke:rgba(var(--fg),.3);stroke-dasharray:4 4}
+.insplot .q.good{fill:rgba(40,170,90,.06)}
+.insplot .tk{font-size:10px;fill:var(--dim)}
+.insplot .ax{font-size:11px;fill:var(--muted)}
+.insplot .ql{font-size:10.5px;fill:var(--dim);font-style:italic}
+.insplot .lb{font-size:9px;font-weight:600;fill:currentColor}
+.ins-boards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.ins-board{padding:14px 16px!important}
+.ins-board ol{margin:0;padding:0;list-style:none}
+.ins-board li{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(var(--fg),.06);font-size:13px}
+.ins-board li:last-child{border-bottom:0}
+.ins-board li .nm2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ins-board li .v{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
+.ins-board li .r{width:16px;color:var(--dim);font-size:11px;flex:none}
+
 .keyrow{display:flex;gap:16px;color:var(--muted);font-size:12px;margin:12px 6px 0;flex-wrap:wrap}
 .keyrow span{display:inline-flex;align-items:center;gap:6px}
 .keyrow i{width:10px;height:10px;border-radius:50%}
@@ -1016,7 +1063,7 @@ const FANTASY_PRESETS = {
   'DraftKings-style': { '1B': 3, '2B': 5, '3B': 8, HR: 10, R: 2, RBI: 2, BB: 2, SB: 5, SO: 0, IP: 2.25, K: 2, HA: -0.6, ER: -2, BBA: -0.6, W: 4, L: 0, SV: 0, HD: 0 },
   'Simple': { '1B': 1, '2B': 2, '3B': 3, HR: 4, R: 1, RBI: 1, BB: 0, SB: 1, SO: 0, IP: 1, K: 1, HA: 0, ER: -1, BBA: 0, W: 3, L: 0, SV: 3, HD: 0 }
 };
-const SEC_NAMES = { spot: 'Spotlight game', tiles: 'Stat tiles', bet: 'Most likely to hit', chart: 'Scoreboard chart' };
+const SEC_NAMES = { spot: 'Spotlight game', tiles: 'Stat tiles', bet: 'Pick of the day', chart: 'Scoreboard chart' };
 const SKEY = 'diamond.settings.v1';
 const DEF = {
   theme: 'light', accent: 'sunset', density: 'comfy', look: 5,
@@ -1079,6 +1126,323 @@ const CMP = store.get(CKEY, [null, null]);
 const saveFav = () => { store.set(FKEY, FAV); updateCounts(); updateHello(); };
 const savePicks = () => { store.set(PKEY, PICKS); updateCounts(); };
 const saveCmp = () => store.set(CKEY, CMP);
+const SPORTX = {
+  unit: 'day',
+  label: k => { if (!k) return ''; const d = new Date(+k.slice(0, 4), +k.slice(4, 6) - 1, +k.slice(6, 8), 12); return (sameDay(d, new Date()) ? 'Today, ' : '') + d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }); },
+  cmp: (a, b) => a < b ? -1 : a > b ? 1 : 0,
+  curKey: () => state.curWk?.d || null,
+  nextKey: () => nextWeekOf(state.curWk)?.d || null,
+  shownKey: () => state.shown?.d || state.curWk?.d || null,
+  extraKeys: (base, X, O, side, ev) => {
+    if (!ev) return [];
+    const sp = evProbables(ev)[side === 'home' ? 'spH' : 'spA']; if (!sp || sp.era == null) return [];
+    const eras = Object.values(base.teams).map(t => t.era).filter(v => v != null), lg = eras.reduce((s, v) => s + v, 0) / (eras.length || 1);
+    if (!(sp.era < lg)) return [];
+    return [{ title: `Lean on ${sp.name}`, score: Math.min(1, .55 + (lg - sp.era) / 3), text: `${sp.full || sp.name} ${sp.rec} gets the ball. His ERA is ${fxd(lg - sp.era, 2)} runs better than the average team’s, so a long, clean start sets this up.` }];
+  }
+};
+const INS = {
+  unit: 'runs', d: 2, tickD: 1, pyExp: 1.83,
+  off: T => T.rs, def: T => T.ra, offLabel: 'Runs scored per game', defLabel: 'Runs allowed per game',
+  colNote: 'Hitting power and discipline, run prevention',
+  teamCols: [
+    { k: 'R/G', get: T => T.rs, d: 2 }, { k: 'RA/G', get: T => T.ra, d: 2, lower: true }, { k: 'DIFF/G', get: T => T.net, d: 2, sign: true },
+    { k: 'OBP', get: T => T.obp, d: 3 }, { k: 'SLG', get: T => T.slg, d: 3 }, { k: 'OPS', get: T => T.ops, d: 3 },
+    { k: 'ISO', get: T => T.slg != null && T.avg != null ? T.slg - T.avg : null, d: 3, tip: 'Isolated power: SLG minus AVG' }, { k: 'HR/G', get: T => T.hr, d: 2 },
+    { k: 'ERA', get: T => T.era, d: 2, lower: true }, { k: 'WHIP', get: T => T.whip, d: 2, lower: true }, { k: 'K/9', get: T => T.k9, d: 1 }, { k: 'E/G', get: T => T.e, d: 2, lower: true }
+  ],
+  players: [
+    { title: 'Isolated power (ISO)', sub: 'extra bases per at-bat: SLG minus AVG · qualified hitters', url: () => `${STATS_API}/byathlete?region=us&lang=en&contentorigin=espn&isqualified=true&page=1&limit=200&category=batting&sort=batting.OPS:desc`, d: 3,
+      metric: m => { const s = num(m['batting.slugAvg']), a = num(m['batting.avg']); return s != null && a != null ? s - a : null; } },
+    { title: 'Walk-to-strikeout ratio', sub: 'plate discipline · qualified hitters', url: () => `${STATS_API}/byathlete?region=us&lang=en&contentorigin=espn&isqualified=true&page=1&limit=200&category=batting&sort=batting.OPS:desc`, d: 2,
+      metric: m => { const b = num(m['batting.walks']), k = num(m['batting.strikeouts']); return k ? b / k : null; } },
+    { title: 'Fielding-independent ERA (est.)', sub: 'what ERA “should” be from HR, walks and Ks · qualified pitchers', url: () => `${STATS_API}/byathlete?region=us&lang=en&contentorigin=espn&isqualified=true&page=1&limit=150&category=pitching&sort=pitching.ERA:asc`, d: 2, lower: true,
+      metric: m => { const ip = ipOuts(m['pitching.innings']) / 3; if (!ip) return null; const g = k => num(m['pitching.' + k]) || 0; return (13 * g('homeRuns') + 3 * g('walks') - 2 * g('strikeouts')) / ip + 3.1; } },
+    { title: 'Strikeouts minus walks per 9', sub: 'dominance on the mound · qualified pitchers', url: () => `${STATS_API}/byathlete?region=us&lang=en&contentorigin=espn&isqualified=true&page=1&limit=150&category=pitching&sort=pitching.ERA:asc`, d: 2,
+      metric: m => { const ip = ipOuts(m['pitching.innings']) / 3; if (!ip) return null; return ((num(m['pitching.strikeouts']) || 0) - (num(m['pitching.walks']) || 0)) * 9 / ip; } }
+  ],
+  extraCards: L => {
+    const pw = [...L].filter(x => x.T.slg != null).sort((a, b) => (b.T.slg - b.T.avg) - (a.T.slg - a.T.avg))[0], wh = [...L].filter(x => x.T.whip).sort((a, b) => a.T.whip - b.T.whip)[0];
+    return [pw && { icon: '💣', title: 'Most power', x: pw, text: `${fxd(pw.T.slg - pw.T.avg, 3).replace(/^0/, '')} isolated power and ${fxd(pw.T.hr, 2)} homers a game.` },
+      wh && { icon: '🧊', title: 'Stingiest pitching', x: wh, text: `${fxd(wh.T.whip, 2)} walks plus hits per inning, the fewest base runners allowed.` }].filter(Boolean);
+  }
+};
+const KEYS = [
+  { title: 'Get runners on base', off: T => T.obp, def: O => O.whip, defHigh: true, check: (a, b) => moreThan((bn(a, 'batting.hits') || 0) + (bn(a, 'batting.walks') || 0), (bn(b, 'batting.hits') || 0) + (bn(b, 'batting.walks') || 0)),
+    say: (X, O, xv, ov, xr, or) => `${X.abbr} get on base at a ${fxd(xv, 3).replace(/^0/, '')} clip (${ordN(xr)}) and ${O.abbr} pitchers allow ${fxd(ov, 2)} base runners an inning (${ordWorst(or)}).` },
+  { title: 'Hit for power', off: T => T.slg, def: O => O.era, defHigh: true, check: (a, b) => moreThan(bn(a, 'batting.homeRuns'), bn(b, 'batting.homeRuns')),
+    say: (X, O, xv, ov, xr, or) => `${X.abbr} slug ${fxd(xv, 3).replace(/^0/, '')} (${ordN(xr)}) against a staff with a ${fxd(ov, 2)} ERA (${ordWorst(or)}). Extra-base hits do the damage.` },
+  { title: 'Pitch to their weakness', off: T => T.era, offLower: true, def: O => O.ops, defHigh: false,
+    say: (X, O, xv, ov, xr, or) => `${X.abbr} carry a ${fxd(xv, 2)} team ERA (${ordN(xr)}-best) and ${O.abbr} hit for just a ${fxd(ov, 3).replace(/^0/, '')} OPS (${ordWorst(or)}). Keeping it low-scoring favors them.` },
+  { title: 'Miss bats', off: T => T.k9, check: (a, b) => moreThan(bn(a, 'pitching.strikeouts'), bn(b, 'pitching.strikeouts')),
+    say: (X, O, xv, ov, xr) => `${X.abbr} pitchers strike out ${fxd(xv, 1)} batters per nine (${ordN(xr)}). Strikeouts take luck out of the game.` },
+  { title: 'Limit free passes', off: T => T.whip, offLower: true, def: O => O.obp, defHigh: false, check: (a, b) => moreThan(bn(b, 'pitching.walks'), bn(a, 'pitching.walks')),
+    say: (X, O, xv, ov, xr, or) => `${X.abbr} allow ${fxd(xv, 2)} base runners an inning (${ordN(xr)}-fewest) and ${O.abbr} reach base at just ${fxd(ov, 3).replace(/^0/, '')} (${ordWorst(or)}).` },
+  { title: 'Play clean defense', off: T => T.e, offLower: true, check: (a, b) => moreThan(bn(b, 'fielding.errors'), bn(a, 'fielding.errors')),
+    say: (X, O, xv, ov, xr) => `${X.abbr} commit ${fxd(xv, 2)} errors a game (${ordN(xr)}-fewest). No extra outs, no unearned runs.` },
+  { title: 'Score early and often', off: T => T.rs, def: O => O.ra, defHigh: true,
+    say: (X, O, xv, ov, xr, or) => `${X.abbr} score ${fxd(xv, 2)} runs a game (${ordN(xr)}) and ${O.abbr} allow ${fxd(ov, 2)} (${ordWorst(or)}).` }
+];
+/* =====================================================================
+   Pick of the day — every day's pick is saved in this browser and
+   shown again when you look back at that day
+   ===================================================================== */
+const DKEY = PKEY.replace('.picks.', '.daypicks.');
+const DAYPICKS = store.get(DKEY, {});
+const saveDayPicks = () => store.set(DKEY, DAYPICKS);
+const slimTeam = t => t ? { id: String(t.id ?? ''), abbreviation: t.abbreviation || '', shortDisplayName: t.shortDisplayName || t.displayName || t.abbreviation || '', displayName: t.displayName || '', logo: t.logo || teamById(t.id)?.logo || '', color: t.color || '' } : null;
+function logBest(b) {
+  if (!b || !b.ok) return;
+  const key = /today|this week/.test(b.when || 'today') ? SPORTX.curKey() : SPORTX.nextKey();
+  if (!key) return;
+  b.key = key;
+  if (!b.top) return;
+  const prev = DAYPICKS[key];
+  if (prev && (prev.result || new Date(prev.date) <= new Date())) return;   // a pick locks once its game starts
+  const c = b.top;
+  DAYPICKS[key] = { key, label: SPORTX.label(key), evId: String(c.ev.id), date: c.ev.date, side: c.side, team: slimTeam(c.team), opp: slimTeam(c.opp), p: c.p, model: c.model, market: c.market, ml: c.ml, savedAt: Date.now(), result: null, final: '' };
+  saveDayPicks();
+}
+async function computeBest() { const b = await computeBestRaw(); try { logBest(b); } catch (e) { console.error(e); } return b; }
+function gradeDayPick(dp, comps, done) {
+  if (!dp || dp.result || !done) return false;
+  const me = comps.find(x => String(x.team?.id ?? x.id) === String(dp.team?.id)), op = comps.find(x => x !== me);
+  if (!me || !op) return false;
+  const a = num(scoreVal(me.score)), b = num(scoreVal(op.score));
+  const tie = me.winner == null && op.winner == null && a != null && a === b;
+  const won = me.winner === true || (me.winner == null && a != null && b != null && a > b);
+  dp.result = tie ? 'P' : won ? 'W' : 'L';
+  dp.final = `${dp.team?.abbreviation || ''} ${a ?? ''}–${b ?? ''} ${dp.opp?.abbreviation || ''}`;
+  return true;
+}
+function gradeDayPicks(evs) {
+  const open = {}; Object.values(DAYPICKS).forEach(dp => { if (!dp.result) open[dp.evId] = dp; });
+  let ch = false;
+  (evs || []).forEach(ev => { const dp = open[String(ev.id)]; if (dp && gradeDayPick(dp, ev.competitions?.[0]?.competitors || [], statusOf(ev).state === 'post')) ch = true; });
+  if (ch) saveDayPicks();
+}
+let dayGradeBusy = false;
+async function gradeOldDayPicks() {
+  if (dayGradeBusy) return; dayGradeBusy = true;
+  try {
+    const due = Object.values(DAYPICKS).filter(dp => !dp.result && Date.now() - new Date(dp.date) > 3 * 3600e3).slice(0, 6);
+    if (!due.length) return;
+    let ch = false;
+    await pool(due, 3, async dp => { const s = await safe(cached(`${API}/summary?event=${dp.evId}`, 3e5)); const hc = s?.header?.competitions?.[0]; if (hc && gradeDayPick(dp, hc.competitors || [], !!hc.status?.type?.completed)) ch = true; });
+    if (ch) { saveDayPicks(); renderBetBox('#betBox'); if (state.tab === 'odds') renderBetBox('#oddsBet', true); }
+  } finally { dayGradeBusy = false; }
+}
+function dayRecord() {
+  const g = Object.values(DAYPICKS).filter(dp => dp.result === 'W' || dp.result === 'L').sort((a, b) => new Date(a.date) - new Date(b.date));
+  const w = g.filter(x => x.result === 'W').length;
+  return { w, l: g.length - w, n: g.length, last: g.slice(-10) };
+}
+const dpChip = (dp, started) => dp.result === 'W' ? `<span class="chip win">✓ Hit · ${esc(dp.final)}</span>` : dp.result === 'L' ? `<span class="chip loss">✗ Missed · ${esc(dp.final)}</span>` : dp.result === 'P' ? `<span class="chip pre">Push · ${esc(dp.final)}</span>` : started ? '<span class="chip live"><i></i>In progress</span>' : '<span class="chip pre">Locked in</span>';
+function renderBetBox(sel, wide) {
+  const box = $(sel); if (!box) return;
+  const b = state.best;
+  if (!b || Date.now() - b.at > 60000) {
+    if (!state.bestLoading) computeBest().then(() => { renderBetBox('#betBox'); if (state.tab === 'odds') renderBetBox('#oddsBet', true); });
+    if (!b) { box.innerHTML = '<div class="skeleton" style="height:100%;min-height:180px;border:0"></div>'; return; }
+  }
+  gradeOldDayPicks();
+  const cur = SPORTX.curKey(), view = SPORTX.shownKey() || cur;
+  const saved = view ? DAYPICKS[view] : null, live = b.ok && b.top && b.key && b.key === view;
+  const pct = x => x == null ? '—' : Math.round(x * 100) + '%';
+  const head = `<div class="tag"><span class="ic">🎯</span>Pick of the ${SPORTX.unit} · ${esc(view ? SPORTX.label(view) : 'today')}</div>`;
+  const R = dayRecord();
+  const recLine = R.n ? `<div class="betrec"><span>Pick of the ${SPORTX.unit} record <b>${R.w}–${R.l}</b> (${Math.round(R.w / R.n * 100)}%)</span><span class="dots">${R.last.map(x => `<i class="${x.result === 'W' ? 'w' : 'l'}" title="${esc(x.label)}: ${esc(x.team?.abbreviation)} ${x.result === 'W' ? 'hit' : 'missed'} (${esc(x.final)})"></i>`).join('')}</span></div>` : '';
+  const hist = wide ? (() => {
+    const all = Object.values(DAYPICKS).sort((a, b2) => new Date(b2.date) - new Date(a.date)).slice(0, 10);
+    return all.length ? `<div class="sublabel">Recent picks (saved in this browser)</div><div class="dphist">${all.map(dp => `<button class="dprow" data-ev="${esc(dp.evId)}"><span class="d">${esc(dp.label)}</span>${logoImg(dp.team)}<span><b>${esc(dp.team?.abbreviation)}</b> ${dp.side === 'home' ? 'vs' : '@'} ${esc(dp.opp?.abbreviation || '')}</span><span class="p">${pct(dp.p)}</span>${dpChip(dp, new Date(dp.date) <= new Date())}</button>`).join('')}</div>` : '';
+  })() : '';
+  const fine = `<div class="betfine">Each ${SPORTX.unit}’s pick is the single outcome with the highest estimated chance: the average of the matchup model and DraftKings’ moneyline with the margin removed. It locks when its game starts and is saved in this browser, so you can look back at any ${SPORTX.unit} you had the dashboard open. For entertainment only · 21+ · 1-800-GAMBLER</div>`;
+  let main, nums = '', alt = '', target = null;
+  if (live) {
+    const c = b.top, pay = payout(c.ml); target = { mu: c.ev.id };
+    main = `<div class="betmain">${logoImg(c.team)}<div><b>${esc(c.team?.shortDisplayName || c.team?.abbreviation)} to win</b><span>${c.side === 'home' ? 'vs' : '@'} ${esc(c.opp?.abbreviation || '')} · ${esc(startTime(c.ev))}</span></div>${ring(c.p, { size: 64, stroke: 7, value: pct(c.p) })}</div>`;
+    nums = `<div class="betnums"><div><b>${pct(c.model)}</b><span>Model</span></div><div><b>${pct(c.market)}</b><span>DraftKings (fair)</span></div><div><b>${c.ml != null ? esc(fmtAm(c.ml)) : '—'}</b><span>${pay != null ? `$100 wins $${pay.toFixed(0)}` : 'Moneyline'}</span></div></div>`;
+    alt = b.next.length ? `<div class="betalt"><span class="sub" style="align-self:center">Next:</span>${b.next.map(n => `<button data-g="${esc(n.ev.id)}">${esc(n.team?.abbreviation)} ${pct(n.p)}</button>`).join('')}</div>` : '';
+  } else if (saved) {
+    const started = new Date(saved.date) <= new Date(), pay = payout(saved.ml); target = { game: saved.evId };
+    main = `<div class="betmain">${logoImg(saved.team)}<div><b>${esc(saved.team?.shortDisplayName || saved.team?.abbreviation)} to win</b><span>${saved.side === 'home' ? 'vs' : '@'} ${esc(saved.opp?.abbreviation || '')} · ${esc(new Date(saved.date).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span></div>${ring(saved.p, { size: 64, stroke: 7, value: pct(saved.p) })}</div>`;
+    nums = `<div class="dpres">${dpChip(saved, started)}</div><div class="betnums"><div><b>${pct(saved.model)}</b><span>Model</span></div><div><b>${pct(saved.market)}</b><span>DraftKings (fair)</span></div><div><b>${saved.ml != null ? esc(fmtAm(saved.ml)) : '—'}</b><span>${pay != null ? `$100 wins $${pay.toFixed(0)}` : 'Moneyline'}</span></div></div>`;
+  } else if (!b.ok) main = `<div class="muted">Couldn’t build the numbers (${esc(b.err?.message || 'no data')}).</div>`;
+  else if (view && cur && SPORTX.cmp(view, cur) < 0) main = `<div class="muted">No pick was saved for this ${SPORTX.unit}. Picks are saved in this browser the first time the dashboard is open on a game ${SPORTX.unit}, so this fills in from now on.</div>`;
+  else if (view && b.key && SPORTX.cmp(view, b.key) > 0) main = `<div class="muted">This ${SPORTX.unit}’s pick posts once its games are next up.</div>`;
+  else main = `<div class="muted">No upcoming games with enough data yet.</div>`;
+  box.innerHTML = wide ? `${head}<div class="betwide"><div style="display:flex;flex-direction:column;gap:12px">${main}${alt}${recLine}</div><div style="display:flex;flex-direction:column;gap:10px">${nums}${fine}</div></div>${hist}` : `${head}${main}${nums}${alt}${recLine}${main.includes('muted') ? '' : fine}`;
+  box.style.cursor = target ? 'pointer' : 'default';
+  box.onclick = e => {
+    const r = e.target.closest('[data-ev]'); if (r) { openGame(r.dataset.ev); return; }
+    const g = e.target.closest('[data-g]'); if (g) { openMatchupFor(g.dataset.g); return; }
+    if (target?.mu) openMatchupFor(target.mu); else if (target?.game) openGame(target.game);
+  };
+}
+
+/* =====================================================================
+   Keys to success — how each team can win, from season stats
+   ===================================================================== */
+const ordN = n => { n = +n || 0; const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
+const ordWorst = r => `${ordN(r)}-worst`;
+function boxStats(d, teamId) {
+  const b = (d?.boxscore?.teams || []).find(x => String(x.team?.id) === String(teamId)), m = {};
+  (b?.statistics || []).forEach(s => {
+    if (Array.isArray(s.stats)) (s.stats || []).forEach(x => { m[`${s.name}.${x.name}`] = x.displayValue; if (m[x.name] == null) m[x.name] = x.displayValue; });
+    else m[s.name] = s.displayValue;
+  });
+  return m;
+}
+const bn = (m, k, part) => { const v = m?.[k]; if (v == null || v === '') return null; if (part != null) { const p = String(v).split(/[-\/]/); return num(p[part]); } return num(v); };
+const moreThan = (a, b) => a == null || b == null ? null : a > b ? true : a < b ? false : null;
+function rankIn(teams, get, val, highFirst) {
+  const vals = teams.map(get).filter(v => v != null && isFinite(v));
+  if (val == null || !vals.length) return null;
+  return { r: 1 + vals.filter(v => highFirst ? v > val : v < val).length, n: vals.length };
+}
+function keysFor(base, X, O, side, ev) {
+  const teams = Object.values(base.teams);
+  const out = [];
+  KEYS.forEach(K => {
+    const xv = K.off(X); if (xv == null || !isFinite(xv)) return;
+    const xr = rankIn(teams, K.off, xv, !K.offLower); if (!xr) return;
+    const px = xr.n > 1 ? 1 - (xr.r - 1) / (xr.n - 1) : .5;
+    let ov = null, or = null, po = .5;
+    if (K.def) { ov = K.def(O); or = rankIn(teams, K.def, ov, !!K.defHigh); if (or) po = or.n > 1 ? 1 - (or.r - 1) / (or.n - 1) : .5; }
+    const score = K.def && or ? (px + po) / 2 : px * .9;
+    out.push({ K, score, text: K.say(X, O, xv, ov, xr.r, or?.r).replace(/\b1st-(fewest|best|worst)\b/g, '$1 in the league') });
+  });
+  (SPORTX.extraKeys ? SPORTX.extraKeys(base, X, O, side, ev) : []).forEach(k => out.push(k));
+  return out.sort((a, b) => b.score - a.score).slice(0, 3);
+}
+function keysSection(d, home, away, st, ev) {
+  const base = MODEL.base;
+  if (!base) {
+    loadModelBase().then(() => { if (state.detail === d && MODEL.base) renderDetail(); }).catch(() => {});
+    return `<div class="section panel glass">${panelHead('Keys to success', 'loading season stats…', IC.wp)}<div class="skeleton" style="height:120px"></div></div>`;
+  }
+  const H = base.teams[String(home.team?.id)], A = base.teams[String(away.team?.id)];
+  if (!H || !A) return '';
+  const bx = { [String(home.team?.id)]: boxStats(d, home.team?.id), [String(away.team?.id)]: boxStats(d, away.team?.id) };
+  const done = st === 'post', started = st !== 'pre';
+  const col = (t, X, O, side) => {
+    const ks = keysFor(base, X, O, side, ev);
+    const mine = bx[String(t.team?.id)], theirs = bx[String((side === 'home' ? away : home).team?.id)];
+    return `<div><div class="keyhd">${logoImg(t.team)}<span>How ${esc(t.team?.shortDisplayName || t.team?.abbreviation || '')} win</span></div>${ks.map(k => {
+      let chip = '';
+      if (started && k.K?.check) { const r = (() => { try { return k.K.check(mine, theirs, done); } catch { return null; } })(); if (r === true) chip = `<span class="kst ok">${done ? '✓ Did it' : '✓ On track'}</span>`; else if (r === false) chip = `<span class="kst no">${done ? '✗ Didn’t' : '✗ Not yet'}</span>`; }
+      return `<div class="keyit">${chip}<b>${esc(k.K?.title || k.title)}</b><p>${esc(k.text)}</p></div>`;
+    }).join('') || '<div class="muted">Not enough season data yet.</div>'}</div>`;
+  };
+  return `<div class="section panel glass">${panelHead('Keys to success', started ? 'from season stats · ✓/✗ = how it’s going in this game' : 'where each team’s strengths meet the other’s weaknesses', IC.wp)}
+    <div class="keys2">${col(away, A, H, 'away')}${col(home, H, A, 'home')}</div></div>`;
+}
+
+/* =====================================================================
+   In-depth stats & insights (Season stats → In-depth)
+   ===================================================================== */
+const INSD = { at: 0, data: null, loading: null, sort: null, dir: -1 };
+const fxd = (v, d = 1) => v == null || !isFinite(v) ? '—' : (+v).toFixed(d);
+async function insightsData() {
+  if (INSD.data && Date.now() - INSD.at < 6e5) return INSD.data;
+  if (INSD.loading) return INSD.loading;
+  INSD.loading = (async () => {
+    const [base, stand] = await Promise.all([loadModelBase(), safe(cached(STANDINGS_API, 6e5))]);
+    const rec = {};
+    const walk = c => { (c.standings?.entries || []).forEach(e => {
+      const g = (...n) => num(dv(statVal(e, ...n)));
+      rec[String(e.team?.id)] = { w: g('wins') || 0, l: g('losses') || 0, t: g('ties') || 0, otl: g('otLosses', 'overtimeLosses') || 0, l10: String(dv(statVal(e, 'lasttengames', 'Last Ten Games')) || '').replace(/,.*$/, ''), strk: dv(statVal(e, 'streak')) };
+    }); (c.children || []).forEach(walk); };
+    (stand?.children || []).forEach(walk);
+    const list = Object.values(base.teams).map(T => {
+      const R = rec[T.id] || {}, team = teamById(T.id) || { id: T.id, abbreviation: T.abbr, displayName: T.name };
+      const off = INS.off(T), def = INS.def(T), gp = (R.w || 0) + (R.l || 0) + (R.t || 0) + (R.otl || 0);
+      const exp = off > 0 && def > 0 ? Math.pow(off, INS.pyExp) / (Math.pow(off, INS.pyExp) + Math.pow(def, INS.pyExp)) : null;
+      const wins = (R.w || 0) + (R.t || 0) / 2, wp = gp ? wins / gp : null;
+      const l10w = num((R.l10 || '').split('-')[0]);
+      return { T, team, R, off, def, net: off != null && def != null ? off - def : null, gp, wp, exp, luck: exp != null && gp ? wins - exp * gp : null, l10w };
+    }).filter(x => x.off != null && x.def != null);
+    const players = await Promise.all(INS.players.map(P => safe(cached(P.url(), 6e5))));
+    INSD.data = { base, list, players, at: Date.now() }; INSD.at = Date.now(); INSD.loading = null;
+    return INSD.data;
+  })().catch(e => { INSD.loading = null; throw e; });
+  return INSD.loading;
+}
+function scatterSvg(list) {
+  const W = 640, H = 400, pl = 46, pr = 18, pt = 18, pb = 40;
+  const xs = list.map(x => x.off), ys = list.map(x => x.def);
+  const pad = (a, b) => { const r = (b - a) || 1; return [a - r * .08, b + r * .08]; };
+  const [x0, x1] = pad(Math.min(...xs), Math.max(...xs)), [y0, y1] = pad(Math.min(...ys), Math.max(...ys));
+  const X = v => pl + (v - x0) / (x1 - x0) * (W - pl - pr), Y = v => pt + (v - y0) / (y1 - y0) * (H - pt - pb);   // fewer allowed = higher
+  const mx = xs.reduce((s, v) => s + v, 0) / xs.length, my = ys.reduce((s, v) => s + v, 0) / ys.length;
+  const ticks = (a, b) => { const st = (b - a) / 4; return [0, 1, 2, 3, 4].map(i => a + st * i); };
+  return `<svg class="insplot" viewBox="0 0 ${W} ${H}" role="img" aria-label="Offense versus defense">
+    <rect x="${X(mx)}" y="${pt}" width="${W - pr - X(mx)}" height="${Y(my) - pt}" class="q good"/>
+    <line x1="${X(mx)}" x2="${X(mx)}" y1="${pt}" y2="${H - pb}" class="avg"/><line x1="${pl}" x2="${W - pr}" y1="${Y(my)}" y2="${Y(my)}" class="avg"/>
+    ${ticks(x0, x1).map(v => `<text x="${X(v)}" y="${H - pb + 16}" text-anchor="middle" class="tk">${fxd(v, INS.tickD)}</text>`).join('')}
+    ${ticks(y0, y1).map(v => `<text x="${pl - 6}" y="${Y(v) + 3}" text-anchor="end" class="tk">${fxd(v, INS.tickD)}</text>`).join('')}
+    <text x="${(pl + W - pr) / 2}" y="${H - 6}" text-anchor="middle" class="ax">${esc(INS.offLabel)} →</text>
+    <text transform="translate(12 ${(pt + H - pb) / 2}) rotate(-90)" text-anchor="middle" class="ax">← ${esc(INS.defLabel)} (fewer is higher)</text>
+    <text x="${W - pr - 6}" y="${pt + 14}" text-anchor="end" class="ql">Good offense · good defense</text>
+    <text x="${pl + 6}" y="${pt + 14}" class="ql">Defense first</text>
+    <text x="${W - pr - 6}" y="${H - pb - 8}" text-anchor="end" class="ql">Offense first</text>
+    <text x="${pl + 6}" y="${H - pb - 8}" class="ql">Struggling on both ends</text>
+    ${list.map(x => { const c = hex(x.team?.color) || '#888', mine = isFavTeam(x.T.id); return `<g class="dot"><title>${esc(x.team?.displayName || x.T.name)}: ${fxd(x.off, INS.d)} for, ${fxd(x.def, INS.d)} against</title><circle cx="${X(x.off)}" cy="${Y(x.def)}" r="${mine ? 8 : 6}" fill="${c}" stroke="${mine ? 'var(--acc)' : '#fff'}" stroke-width="${mine ? 3 : 1.2}"/><text x="${X(x.off)}" y="${Y(x.def) - 9}" text-anchor="middle" class="lb">${esc(x.T.abbr || '')}</text></g>`; }).join('')}
+  </svg>`;
+}
+async function renderInsights() {
+  const body = $('#seasonBody'); if (!body) return;
+  $$('#season [data-ss="per"]').forEach(el => el.classList.add('hidden'));
+  body.className = '';
+  if (!INSD.data) body.innerHTML = '<div class="skeleton" style="height:520px"></div>';
+  let D;
+  try { D = await insightsData(); } catch (e) { renderError(body, e, renderInsights); return; }
+  if (SS.mode !== 'insights' || !$('#seasonBody')) return;
+  const L = D.list, by = (f, asc) => [...L].filter(x => f(x) != null && isFinite(f(x))).sort((a, b) => asc ? f(a) - f(b) : f(b) - f(a));
+  const nm = x => x.team?.shortDisplayName || x.team?.displayName || x.T.name || x.T.abbr;
+  const U = INS.unit, d = INS.d;
+  const card = (icon, title, x, text) => x ? `<div class="panel glass ins-card"><div class="t"><i>${icon}</i>${esc(title)}</div><div class="h">${logoImg(x.team)}${esc(nm(x))}</div><p>${text}</p></div>` : '';
+  const best = by(x => x.net)[0], bo = by(x => x.off)[0], bd = by(x => x.def, true)[0], lucky = by(x => x.luck)[0], unlucky = by(x => x.luck, true)[0], hot = by(x => x.l10w)[0];
+  const cards = [
+    card('🏆', 'Best overall', best, best && `Outscoring opponents by ${fxd(best.net, d)} ${U} per game, the best margin in the league.`),
+    card('🔥', 'Best offense', bo, bo && `${fxd(bo.off, d)} ${U} per game. ${esc(INS.offNote || '')}`),
+    card('🧱', 'Best defense', bd, bd && `Allowing just ${fxd(bd.def, d)} ${U} per game.`),
+    lucky && lucky.luck >= .5 ? card('🍀', 'Winning more than they “should”', lucky, `${fxd(lucky.luck, 1)} more wins than their ${U} differential predicts. Records like this often cool off.`) : '',
+    unlucky && unlucky.luck <= -.5 ? card('🌧️', 'Better than their record', unlucky, `${fxd(-unlucky.luck, 1)} fewer wins than their ${U} differential predicts. Expect better results ahead.`) : '',
+    hot && hot.R.l10 ? card('📈', 'Hottest team', hot, `${esc(hot.R.l10)} in their last 10${hot.R.strk && hot.R.strk !== '—' ? `, current streak ${esc(hot.R.strk)}` : ''}.`) : '',
+    ...(INS.extraCards ? INS.extraCards(L, D.base).map(c => card(c.icon, c.title, c.x, c.text)) : [])
+  ].filter(Boolean).join('');
+  // luck table
+  const luckRows = by(x => x.luck).map((x, i) => `<tr class="${isFavTeam(x.T.id) ? 'mine' : ''}"><td class="rk">${i + 1}</td><td class="pl"><div class="pcell">${logoImg(x.team)}<div><b>${esc(nm(x))}</b><span>${esc(x.T.abbr || '')}</span></div></div></td>
+    <td>${x.R.w ?? 0}-${x.R.l ?? 0}${x.R.t ? '-' + x.R.t : ''}${x.R.otl ? '-' + x.R.otl : ''}</td><td>${x.wp != null ? fxd(x.wp, 3).replace(/^0/, '') : '—'}</td><td>${x.exp != null ? fxd(x.exp, 3).replace(/^0/, '') : '—'}</td>
+    <td class="${x.luck > .5 ? 'pos' : x.luck < -.5 ? 'neg' : ''}">${x.luck != null ? (x.luck > 0 ? '+' : '') + fxd(x.luck, 1) : '—'}</td><td class="${x.net > 0 ? 'pos' : x.net < 0 ? 'neg' : ''}">${x.net > 0 ? '+' : ''}${fxd(x.net, d)}</td></tr>`).join('');
+  // advanced team table
+  const cols = INS.teamCols, sortK = INSD.sort || cols[0].k, sc = cols.find(c => c.k === sortK) || cols[0];
+  const val = (x, c) => { const v = c.get(x.T, x); return v == null || !isFinite(v) ? null : v; };
+  const ranks = {}; cols.forEach(c => { const vs = L.map(x => val(x, c)).filter(v => v != null); ranks[c.k] = v => v == null ? null : 1 + vs.filter(o => c.lower ? o < v : o > v).length; });
+  const rows = [...L].sort((a, b) => INSD.dir * ((val(a, sc) ?? -1e9) - (val(b, sc) ?? -1e9)) * (sc.lower ? -1 : 1));
+  const n = L.length;
+  const adv = rows.map((x, i) => `<tr class="${isFavTeam(x.T.id) ? 'mine' : ''}"><td class="rk">${i + 1}</td><td class="pl"><div class="pcell">${logoImg(x.team)}<div><b>${esc(nm(x))}</b><span>${esc(x.T.abbr || '')}</span></div></div></td>
+    ${cols.map(c => { const v = val(x, c), r = ranks[c.k](v); const cls = r == null ? '' : r <= 5 ? 'pos' : r > n - 5 ? 'neg' : ''; return `<td class="${cls} ${c.k === sc.k ? 'sorted' : ''}" title="${r ? ordN(r) + ' of ' + n : ''}">${v == null ? '—' : (c.sign && v > 0 ? '+' : '') + fxd(v, c.d ?? 1)}</td>`; }).join('')}</tr>`).join('');
+  // player boards
+  const boards = INS.players.map((P, i) => {
+    const data = D.players[i];
+    const rws = (data?.athletes || []).map(a => ({ a: a.athlete || {}, m: athleteMap(data, a) }));
+    const ctx = P.prep ? P.prep(rws) : null;
+    const top = rws.map(r => ({ ...r, v: P.metric(r.m, ctx) })).filter(r => r.v != null && isFinite(r.v)).sort((a, b) => P.lower ? a.v - b.v : b.v - a.v).slice(0, 8);
+    return `<div class="panel glass ins-board"><div class="ph" style="margin-bottom:6px"><h3 style="font-size:15px">${esc(P.title)}</h3></div><div class="sub" style="margin:-4px 0 8px">${esc(P.sub)}</div>
+      ${top.length ? `<ol>${top.map((r, k) => { const tm = teamById(r.a.teamId); return `<li><span class="r">${k + 1}</span>${avatar(r.a.displayName, hex(tm?.color), r.a.id, 'xs')}<span class="nm2">${esc(r.a.displayName || '')} <span class="sub">${esc(r.a.teamShortName || tm?.abbreviation || '')}</span></span><span class="v">${(P.sign && r.v > 0 ? '+' : '') + fxd(r.v, P.d ?? 1)}${P.unit || ''}</span></li>`; }).join('')}</ol>` : '<div class="muted">Not available right now.</div>'}</div>`;
+  }).join('');
+  body.innerHTML = `<div class="ins-cards">${cards}</div>
+    <div class="ins-grid"><div class="panel glass">${panelHead('Offense vs. defense', `every team, ${esc(U)} per game · dashed lines = league average`, IC.st)}${scatterSvg(L)}</div>
+      <div class="panel glass">${panelHead('Luck check', `actual record vs. what the ${esc(U)} differential predicts`, IC.wp)}
+        <div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="stbl teams"><thead><tr><th>#</th><th style="text-align:left">Team</th><th>Record</th><th>Win %</th><th title="Pythagorean expectation">Expected</th><th title="Wins above expected">+/− W</th><th>Diff/G</th></tr></thead><tbody>${luckRows}</tbody></table></div>
+        <p class="note" style="margin-top:8px">Expected win % uses the Pythagorean formula (${esc(U)} for<sup>${INS.pyExp}</sup> ÷ (for<sup>${INS.pyExp}</sup> + against<sup>${INS.pyExp}</sup>)). Teams far above it have usually been winning close games, which tends not to last.</p></div></div>
+    <div class="panel glass" style="margin-bottom:16px">${panelHead('Advanced team stats', `${esc(INS.colNote)} · green = top 5, red = bottom 5 · click a column to sort`, IC.st)}
+      <div class="tbl-wrap"><table class="stbl teams"><thead><tr><th>#</th><th style="text-align:left">Team</th>${cols.map(c => `<th class="sortable ${c.k === sc.k ? 'sorted' : ''}" data-ik="${esc(c.k)}" title="${esc(c.tip || '')}">${esc(c.k)}${c.k === sc.k ? (INSD.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>${adv}</tbody></table></div></div>
+    <div class="sublabel" style="margin:4px 0 10px">Advanced player leaders</div><div class="ins-boards">${boards}</div>`;
+  $$('#seasonBody [data-ik]').forEach(th => th.onclick = () => { if (INSD.sort === th.dataset.ik || (!INSD.sort && th.dataset.ik === cols[0].k)) INSD.dir *= -1; else { INSD.sort = th.dataset.ik; INSD.dir = -1; } renderInsights(); });
+}
 const isFavTeam = id => id != null && FAV.teamId != null && String(id) === FAV.teamId;
 const isFavPlayer = id => FAV.players.some(p => String(p.id) === String(id));
 function toggleFavPlayer(pl) {
@@ -1453,7 +1817,7 @@ async function loadScores(silent) {
     absorbCalendar(data, state.wk ? 'shown' : 'both');
     const order = { in: 0, pre: 1, post: 2 };
     state.events = (data.events || []).sort((a, b) => (order[statusOf(a).state] - order[statusOf(b).state]) || (new Date(a.date) - new Date(b.date)));
-    state.events.forEach(gradeEvent);
+    state.events.forEach(gradeEvent); gradeDayPicks(state.events);
     if (isCurWeek()) { state.todayEvents = state.events; state.todayAt = Date.now(); }
     state.error = null; state.lastOk = Date.now();
     renderScores();
@@ -1759,6 +2123,8 @@ function renderDetail() {
     const cell = (pp, t) => pp ? `<div class="gldr">${avatar(pp.full, hex(t.team?.color), pp.id, 'md')}<div class="tx"><b>${esc(pp.full)}</b><span class="dv">${esc(t.team?.abbreviation || '')} starter ${esc(pp.rec)}</span></div></div>` : `<div class="gldr"><span class="muted">${esc(t.team?.abbreviation || '')} starter TBD</span></div>`;
     if (pa || ph) h += `<div class="section panel glass">${panelHead('Probable starters', 'W-L, ERA', IC.ld)}<div class="probrow">${cell(pa, away)}${cell(ph, home)}</div></div>`;
   }
+
+  h += keysSection(d, home, away, st, ev);
 
   // odds
   const dOdds = parseOdds(pickBook(d.pickcenter)) || (ev ? oddsForEvent(ev) : null);
@@ -2422,6 +2788,7 @@ function seasonFP(m) {
 const playerUrl = (cat, col, page, limit = 50, dir = SS.dir) => `${STATS_API}/byathlete?region=us&lang=en&contentorigin=espn&isqualified=${SS.qualified}&page=${page}&limit=${limit}&category=${encodeURIComponent(SCATS[cat].q)}&sort=${col.c}.${SS.per === 'pg' && col.pg ? col.pg : col.n}:${dir < 0 ? 'desc' : 'asc'}`;
 async function loadSeason(reset = true) {
   if (reset) { SS.page = 1; SS.rows = []; }
+  if (SS.mode === 'insights') { renderSeason(); return; }
   renderSeason();
   try {
     if (SS.mode === 'players') {
@@ -2451,7 +2818,7 @@ function renderSeason() {
   const box = $('#season'); if (!box) return;
   const seg = (attr, opts, cur) => `<div class="seg" data-ss="${attr}">${opts.map(([v, l]) => `<button data-v="${v}" class="${cur === v ? 'on' : ''}">${l}</button>`).join('')}</div>`;
   const players = SS.mode === 'players';
-  box.innerHTML = `<div class="seasonbar">${seg('mode', [['players', 'Players'], ['teams', 'Teams']], SS.mode)}${players ? seg('cat', Object.entries(SCATS).map(([k, c]) => [k, c.label]), SS.cat) : ''}${seg('per', [['tot', 'Season totals'], ['pg', 'Per game']], SS.per)}
+  box.innerHTML = `<div class="seasonbar">${seg('mode', [['players', 'Players'], ['teams', 'Teams'], ['insights', 'In-depth']], SS.mode)}${players ? seg('cat', Object.entries(SCATS).map(([k, c]) => [k, c.label]), SS.cat) : ''}${seg('per', [['tot', 'Season totals'], ['pg', 'Per game']], SS.per)}
       ${players ? `<button class="toggle glass autopill ${SS.qualified ? 'on' : ''}" id="ssQual" style="color:var(--text)">Qualified only<span class="switch"></span></button>
       <label class="search glass" style="width:230px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="ssSearch" placeholder="Filter by player or team…" value="${esc(SS.search)}"></label>` : ''}
       <span class="spacer"></span><span class="pillbtn glass" style="cursor:default">${esc(SS.season ? SS.season + ' season' : 'This season')}</span></div>
@@ -2473,6 +2840,7 @@ function renderSeason() {
 }
 function paintSeasonTable() {
   const body = $('#seasonBody'); if (!body) return;
+  if (SS.mode === 'insights') { renderInsights(); return; }
   if (SS.mode === 'teams') {
     if (!SS.teams) { body.innerHTML = '<div class="skeleton" style="height:520px"></div>'; return; }
     const col = TCOLS.find(c => c.k === SS.tSort) || TCOLS[1];
@@ -2618,7 +2986,7 @@ const evProbables = ev => { const { home, away } = compOf(ev); return { spA: pro
 
 /* ---------- Most likely to hit ---------- */
 state.best = null;
-async function computeBest() {
+async function computeBestRaw() {
   if (state.bestLoading) return state.bestLoading;
   state.bestLoading = (async () => {
     const base = await loadModelBase();
@@ -2650,7 +3018,7 @@ async function computeBest() {
   return state.bestLoading;
 }
 const payout = ml => ml == null ? null : ml < 0 ? 100 * 100 / -ml : ml;
-function renderBetBox(sel, wide) {
+function renderBetBoxOld(sel, wide) {
   const box = $(sel); if (!box) return;
   const b = state.best;
   if (!b || Date.now() - b.at > 60000) { if (!b) box.innerHTML = '<div class="skeleton" style="height:100%;min-height:180px;border:0"></div>'; computeBest().then(() => { renderBetBox('#betBox'); if (state.tab === 'odds') renderBetBox('#oddsBet', true); }); if (!b) return; }
