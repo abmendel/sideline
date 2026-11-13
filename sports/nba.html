@@ -797,6 +797,7 @@ img{max-width:100%}
 .pl2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plrow{margin-bottom:12px}.plrow .probbar{margin-top:6px}.pltop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}.pltop .muted{font-size:11.5px}.plrow.faded{opacity:.6}@media (max-width:700px){.pl2col{grid-template-columns:1fr}}
 .parlay{margin-bottom:16px}.plegs{display:flex;flex-direction:column;gap:6px}.pleg{display:grid;grid-template-columns:24px 30px 1fr 96px 86px;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.pleg:hover{background:rgba(var(--fg),.09)}.pleg img,.pleg .logo-ph{width:28px;height:28px;object-fit:contain}.pleg .pn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--acc);color:var(--acc-ink)}.pleg .pt{min-width:0}.pleg .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pleg .pt span,.pleg .pp span{font-size:11.5px;color:var(--muted)}.pleg .pp{text-align:right}.pleg .pp b{display:block;font-variant-numeric:tabular-nums}.ptot{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}.ptot div{background:rgba(var(--fg),.06);border:1px solid var(--edge-soft);border-radius:14px;padding:10px 12px}.ptot b{display:block;font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.ptot span{font-size:11px;color:var(--dim)}.pfoot{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}.pfoot .muted{flex:1;min-width:240px;font-size:11.5px;line-height:1.45}.seg button[disabled]{opacity:.35;cursor:default}@media (max-width:700px){.phist{grid-template-columns:70px 1fr auto}.phist .po{display:none}}.pleg{position:relative}.pleg .pres{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:-4px}.phists{display:flex;flex-direction:column;gap:6px}.phist{display:grid;grid-template-columns:110px 1fr 60px auto;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;background:rgba(var(--fg),.04);font-size:12.5px}.phist .d{color:var(--muted)}.phist .po{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.phist .hl{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.hleg{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border-radius:999px;background:rgba(var(--fg),.06);font-weight:600;font-size:11.5px}.hleg img,.hleg .logo-ph{width:18px;height:18px;object-fit:contain}.hleg.w{background:rgba(var(--acc-rgb),.18);color:var(--acc-text)}.hleg.l{color:var(--bad)}@media (max-width:700px){.ptot{grid-template-columns:repeat(2,minmax(0,1fr))}.pleg{grid-template-columns:22px 26px 1fr 64px}.pleg .pp:last-child{display:none}}
 .mplist{display:flex;flex-direction:column;gap:6px}.mprow{display:grid;grid-template-columns:30px 1fr 70px 96px;align-items:center;gap:10px;padding:7px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.mprow:hover{background:rgba(var(--fg),.09)}.mprow img,.mprow .logo-ph{width:28px;height:28px;object-fit:contain}.mprow .pt{min-width:0}.mprow .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mprow .pt span,.mprow .pp span{font-size:11.5px;color:var(--muted)}.mprow .pp{text-align:right}.mprow .pp b{display:block;font-variant-numeric:tabular-nums}.mprow .chip{justify-self:end}.mptot{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 4px}.mptot span{display:block}.mph .hleg{cursor:pointer}@media (max-width:700px){.mprow{grid-template-columns:26px 1fr 52px auto}.mptot{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.syncbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;padding:14px 18px}.syncl{flex:1;min-width:260px;display:flex;flex-direction:column;gap:3px}.syncl b{font-weight:600}.syncl span{font-size:12.5px;color:var(--muted);line-height:1.45}.syncl code{font-size:12px;padding:1px 6px;border-radius:6px;background:rgba(var(--fg),.08);color:var(--text);user-select:all}.syncr{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.syncr input{min-width:240px;padding:8px 12px;border-radius:999px;border:1px solid var(--edge-soft);background:rgba(var(--fg),.06);color:var(--text);font:inherit;font-size:13px}
 </style>
 </head>
 <body>
@@ -878,7 +879,7 @@ img{max-width:100%}
       <p class="rg">Lines are DraftKings odds as reported through ESPN’s feed (DraftKings is ESPN’s official odds provider). They refresh with the dashboard, can trail the sportsbook by a minute or more, and in-game lines aren’t always published. “Fair win %” is the moneyline’s implied probability with the sportsbook’s margin removed. Make your own picks for fun on the Picks page. 21+ only. If gambling stops being fun, call 1-800-GAMBLER.</p>
     </section>
 
-    <section id="view-picks" class="hidden"><div id="parlayBox"></div><div id="mpBox"></div><div class="picks-grid" id="picks"></div></section>
+    <section id="view-picks" class="hidden"><div id="syncBar"></div><div id="parlayBox"></div><div id="mpBox"></div><div class="picks-grid" id="picks"></div></section>
     <section id="view-matchup" class="hidden"><div id="matchup"></div></section>
     <section id="view-compare" class="hidden"><div id="compare"></div></section>
 
@@ -1078,7 +1079,7 @@ if (FAV.teamId != null) FAV.teamId = String(FAV.teamId);
 const PICKS = store.get(PKEY, {});
 const CMP = store.get(CKEY, [null, null]);
 const saveFav = () => { store.set(FKEY, FAV); updateCounts(); updateHello(); };
-const savePicks = () => { store.set(PKEY, PICKS); updateCounts(); };
+const savePicks = () => { store.set(PKEY, PICKS); updateCounts(); try { syncNote(); } catch (e) {} };
 const saveCmp = () => store.set(CKEY, CMP);
 const SPORTX = {
   id: 'nba', move: { sp: 1.5, tot: 3 },
@@ -1208,9 +1209,9 @@ function renderBetBox(sel, wide) {
   const recLine = R.n ? `<div class="betrec"><span>Pick of the ${SPORTX.unit} record <b>${R.w}–${R.l}</b> (${Math.round(R.w / R.n * 100)}%)</span><span class="dots">${R.last.map(x => `<i class="${x.result === 'W' ? 'w' : 'l'}" title="${esc(x.label)}: ${esc(x.team?.abbreviation)} ${x.result === 'W' ? 'hit' : 'missed'} (${esc(x.final)})"></i>`).join('')}</span></div>` : '';
   const hist = wide ? (() => {
     const all = Object.values(DAYPICKS).sort((a, b2) => new Date(b2.date) - new Date(a.date)).slice(0, 10);
-    return all.length ? `<div class="sublabel">Recent picks (saved in this browser)</div><div class="dphist">${all.map(dp => `<button class="dprow" data-ev="${esc(dp.evId)}"><span class="d">${esc(dp.label)}</span>${logoImg(dp.team)}<span><b>${esc(dp.team?.abbreviation)}</b> ${dp.side === 'home' ? 'vs' : '@'} ${esc(dp.opp?.abbreviation || '')}</span><span class="p">${pct(dp.p)}</span>${dpChip(dp, new Date(dp.date) <= new Date())}</button>`).join('')}</div>` : '';
+    return all.length ? `<div class="sublabel">Recent picks</div><div class="dphist">${all.map(dp => `<button class="dprow" data-ev="${esc(dp.evId)}"><span class="d">${esc(dp.label)}</span>${logoImg(dp.team)}<span><b>${esc(dp.team?.abbreviation)}</b> ${dp.side === 'home' ? 'vs' : '@'} ${esc(dp.opp?.abbreviation || '')}</span><span class="p">${pct(dp.p)}</span>${dpChip(dp, new Date(dp.date) <= new Date())}</button>`).join('')}</div>` : '';
   })() : '';
-  const fine = `<div class="betfine">Each ${SPORTX.unit}’s pick is the single outcome with the highest estimated chance, combining the learning model with DraftKings’ moneyline (margin removed)${LEARN.model?.blend ? `, weighted by what ${LEARN.model.blend.n} past games showed works best` : ', half and half until enough results are in to learn a better mix'}. It locks when its game starts and is saved in this browser, so you can look back at any ${SPORTX.unit} you had the dashboard open. For entertainment only · 21+ · 1-800-GAMBLER</div>`;
+  const fine = `<div class="betfine">Each ${SPORTX.unit}’s pick is the single outcome with the highest estimated chance, combining the learning model with DraftKings’ moneyline (margin removed)${LEARN.model?.blend ? `, weighted by what ${LEARN.model.blend.n} past games showed works best` : ', half and half until enough results are in to learn a better mix'}. It locks when its game starts and is recorded on the site every hour, so the history is the same on every device. For entertainment only · 21+ · 1-800-GAMBLER</div>`;
   let main, nums = '', alt = '', target = null;
   if (live) {
     const c = b.top, pay = payout(c.ml); target = { mu: c.ev.id };
@@ -1222,7 +1223,7 @@ function renderBetBox(sel, wide) {
     main = `<div class="betmain">${logoImg(saved.team)}<div><b>${esc(saved.team?.shortDisplayName || saved.team?.abbreviation)} to win</b><span>${saved.side === 'home' ? 'vs' : '@'} ${esc(saved.opp?.abbreviation || '')} · ${esc(new Date(saved.date).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span></div>${ring(saved.p, { size: 64, stroke: 7, value: pct(saved.p) })}</div>`;
     nums = `<div class="dpres">${dpChip(saved, started)}</div><div class="betnums"><div><b>${pct(saved.model)}</b><span>Model</span></div><div><b>${pct(saved.market)}</b><span>DraftKings (fair)</span></div><div><b>${saved.ml != null ? esc(fmtAm(saved.ml)) : '—'}</b><span>${pay != null ? `$100 wins $${pay.toFixed(0)}` : 'Moneyline'}</span></div></div>`;
   } else if (!b.ok) main = `<div class="muted">Couldn’t build the numbers (${esc(b.err?.message || 'no data')}).</div>`;
-  else if (view && cur && SPORTX.cmp(view, cur) < 0) main = `<div class="muted">No pick was saved for this ${SPORTX.unit}. Picks are saved in this browser the first time the dashboard is open on a game ${SPORTX.unit}, so this fills in from now on.</div>`;
+  else if (view && cur && SPORTX.cmp(view, cur) < 0) main = `<div class="muted">No pick was saved for this ${SPORTX.unit}. The site records a pick every hour before the games, starting November 13, 2026.</div>`;
   else if (view && b.key && SPORTX.cmp(view, b.key) > 0) main = `<div class="muted">This ${SPORTX.unit}’s pick posts once its games are next up.</div>`;
   else main = `<div class="muted">No upcoming games with enough data yet.</div>`;
   box.innerHTML = wide ? `${head}<div class="betwide"><div style="display:flex;flex-direction:column;gap:12px">${main}${alt}${recLine}</div><div style="display:flex;flex-direction:column;gap:10px">${nums}${fine}</div></div>${hist}` : `${head}${main}${nums}${alt}${recLine}${main.includes('muted') ? '' : fine}`;
@@ -3039,7 +3040,7 @@ function openSettings() {
       <div class="setsec"><h4>Fantasy scoring</h4>
         <div class="setrow" style="justify-content:flex-start;gap:6px">${Object.keys(FANTASY_PRESETS).map(k => `<button class="pickbtn" data-preset="${k}">${k}</button>`).join('')}</div>
         <div class="fgrid">${[['PTS', 'Point'], ['3PM', '3-pointer made'], ['REB', 'Rebound'], ['AST', 'Assist'], ['STL', 'Steal'], ['BLK', 'Block'], ['TO', 'Turnover'], ['DD', 'Double-double'], ['TD', 'Triple-double']].map(([k, l]) => `<label>${l}<input type="number" step="0.25" data-fp="${k}" value="${SET.fantasy[k]}"></label>`).join('')}</div></div>
-      <div class="setsec"><h4>Your data</h4><p class="sub" style="margin:-4px 0 10px">Favorites, picks and settings live in this browser. Copy them to move to another browser or computer.</p>
+      <div class="setsec"><h4>Your data</h4><p class="sub" style="margin:-4px 0 10px">Favorites and settings live in this browser — copy them to move them. Your picks can sync to every device from the Picks tab, and the model’s picks are recorded on the site.</p>
         <textarea class="dataarea" id="dataOut" readonly>${esc(JSON.stringify({ favorites: FAV, picks: PICKS, settings: SET, compare: CMP }))}</textarea>
         <div class="setrow" style="justify-content:flex-start;gap:8px"><button class="pillbtn glass sm" id="copyData">Copy</button></div>
         <textarea class="dataarea" id="dataIn" placeholder="Paste data from another browser here…"></textarea>
@@ -3259,7 +3260,7 @@ function renderTracker() {
   // pick of the day record + months
   const R = dayRecord();
   const months = (E.months || []).filter(m => m.n >= 5).slice(-12).reverse();
-  h += `<div class="ins-grid" style="margin-bottom:16px"><div class="panel glass">${panelHead(`Pick of the ${SPORTX.unit} record`, 'saved in this browser', IC.wp)}
+  h += `<div class="ins-grid" style="margin-bottom:16px"><div class="panel glass">${panelHead(`Pick of the ${SPORTX.unit} record`, 'recorded every hour', IC.wp)}
       ${R.n ? `<div class="three" style="grid-template-columns:repeat(2,1fr)">${tile('Record', `${R.w}–${R.l}`, `${pct0(R.w / R.n)} hit rate`)}${tile(`Last ${R.last.length}`, `<span class="betrec" style="font-size:inherit"><span class="dots">${R.last.map(x => `<i class="${x.result === 'W' ? 'w' : ''}" title="${esc(x.final || '')}"></i>`).join('')}</span></span>`, 'oldest to newest')}</div>` : `<p class="muted" style="margin:0">No graded picks of the ${esc(SPORTX.unit)} yet. Each one is saved when you open the dashboard and graded after the final.</p>`}</div>
     <div class="panel glass">${panelHead('By month', 'games graded and accuracy', IC.st)}${months.length ? `<div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Games</th><th>Right</th><th>Brier</th></tr></thead><tbody>${months.map(m => `<tr><td>${esc(new Date(+m.m.slice(0, 4), +m.m.slice(5, 7) - 1, 15).toLocaleDateString([], { month: 'long', year: 'numeric' }))}</td><td>${m.n}</td><td><b>${pctS(m.acc)}</b></td><td>${m.brier?.toFixed(3) ?? '—'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="muted">No months graded yet.</div>'}</div></div>`;
   // recent predictions
@@ -3447,7 +3448,7 @@ function bindParlay() { $$('#parN button').forEach(b => b.onclick = () => { if (
 
 function parlayHistory(n, curKey) {
   const past = Object.values(PARLAYS).filter(P => P.key !== curKey && P.legs.length >= Math.min(n, 2)).sort((a, b) => b.key.localeCompare(a.key)).slice(0, 10);
-  if (!past.length) return '<div class="sublabel">Past parlays</div><p class="muted" style="margin:0">Each day’s suggested parlay is saved here and graded leg by leg after the games.</p>';
+  if (!past.length) return '<div class="sublabel">Past parlays</div><p class="muted" style="margin:0">Each day’s suggested parlay is recorded here every hour until the first game starts, then graded leg by leg.</p>';
   const R = parlayRecord(n);
   const rows = past.map(P => {
     const L = P.legs.slice(0, n), out = parlayOutcome(L), dec = L.reduce((s, l) => s * (decOdds(l.ml) || 1), 1);
@@ -3525,13 +3526,167 @@ async function renderModelPicks() {
       return `<div class="phist mph"><span class="d">${esc(mpDay(d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</span><span class="hl">${L.map(m => `<span class="hleg ${m.result === 'W' ? 'w' : m.result === 'L' ? 'l' : ''}" data-ev="${esc(m.evId)}" title="${esc((m.team?.shortDisplayName || '') + ' to win · ' + Math.round(m.p * 100) + '%' + (m.final ? ' · ' + m.final : ''))}">${logoImg(m.team)}${esc(m.team?.abbreviation || '')}${m.result === 'W' ? ' ✓' : m.result === 'L' ? ' ✗' : ''}</span>`).join('')}</span><span class="po">${r.n ? `${r.w}–${r.l}` : ''}</span>${r.n === L.length && r.n ? `<span class="chip ${r.w >= r.l ? 'win' : 'loss'}">${r.pct}%</span>` : '<span class="chip pre">Pending</span>'}</div>`; }).join('')}</div>` : '';
     const tile = (k, r, s) => `<div><b>${r.n ? `${r.w}–${r.l}` : '—'}</b><span>${k}${r.n ? ` · ${r.pct}%` : ''}</span>${s ? `<span>${s}</span>` : ''}</div>`;
     box.innerHTML = `<div class="panel glass parlay"><div class="ph"><span class="pic">🧠</span><h3>Model’s picks</h3><span class="sub">the side our model favors in every game · ✓/✗ after the final</span></div>
-      ${all.length ? `<div class="ptot mptot">${tile('All picks', R)}${tile('Last 7 days', R7)}${tile('65%+ confident', RC)}</div>${shown.map(section).join('')}${pastHtml}` : '<p class="muted" style="margin:0">The model’s pick for every game is saved here the first time the dashboard is open before the games, then graded after the final.</p>'}
-      <p class="muted" style="margin:10px 0 0;font-size:11.5px;line-height:1.45">Each pick is the team with the higher win chance from our model blended with DraftKings (margin removed). Picks lock when their game starts and are saved in this browser. For fun only · 21+ · 1-800-GAMBLER</p></div>`;
+      ${all.length ? `<div class="ptot mptot">${tile('All picks', R)}${tile('Last 7 days', R7)}${tile('65%+ confident', RC)}</div>${shown.map(section).join('')}${pastHtml}` : '<p class="muted" style="margin:0">The site records the model’s pick for every game each hour before tip-off and grades it after the final. The first picks appear here shortly.</p>'}
+      <p class="muted" style="margin:10px 0 0;font-size:11.5px;line-height:1.45">Each pick is the team with the higher win chance from our model blended with DraftKings (margin removed). Picks lock when their game starts and are recorded on the site every hour, so the record is the same on every device. For fun only · 21+ · 1-800-GAMBLER</p></div>`;
     $$('#mpBox [data-ev]').forEach(r => r.onclick = e => { e.stopPropagation(); openGame(r.dataset.ev); });
   };
   draw();
   if (await gradeModelPicks()) draw();
 }
+
+/* =====================================================================
+   Permanent record + sync
+   1. data/ledger-<sport>.json — written every hour by GitHub (learn/ledger.mjs): the model's pick
+      for every game, pick of the day and the day's parlay, locked at the start and graded. Merged in
+      here so the history is the same on every device and survives site updates.
+   2. Sync code — your own picks copied to a small online store (Firestore on the free Firebase
+      project) under a long random code, so any device with the code shows the same picks.
+   ===================================================================== */
+const SYNC_SPORT = typeof SPORTX !== 'undefined' ? SPORTX.id : 'soccer';
+const LEDGER = { data: null, at: 0, busy: null };
+function ledgerLocked(e) { return !!e && (!!e.result || new Date(e.date) <= new Date()); }
+function mergeLedger(L) {
+  if (!L) return false;
+  let ch = 0;
+  Object.entries(L.picks || {}).forEach(([id, e]) => {
+    const cur = MPICKS[id];
+    if (!cur || ledgerLocked(e) || ledgerLocked(cur)) {
+      const nx = cur && cur.result && !e.result ? { ...e, result: cur.result, final: cur.final } : { ...e };
+      if (JSON.stringify(cur) !== JSON.stringify(nx)) { MPICKS[id] = nx; ch++; }
+    }
+  });
+  Object.entries(L.day || {}).forEach(([k, e]) => {
+    const cur = DAYPICKS[k];
+    if (!cur || ledgerLocked(e) || ledgerLocked(cur)) {
+      const nx = { ...e, key: k, label: typeof SPORTX !== 'undefined' ? SPORTX.label(k) : e.label, savedAt: cur?.savedAt || Date.now() };
+      if (cur && cur.result && !nx.result) { nx.result = cur.result; nx.final = cur.final; }
+      if (JSON.stringify(cur) !== JSON.stringify(nx)) { DAYPICKS[k] = nx; ch++; }
+    }
+  });
+  Object.entries(L.parlays || {}).forEach(([k, P]) => {
+    const cur = PARLAYS[k];
+    if (!cur || P.legs.some(ledgerLocked) || cur.legs.some(ledgerLocked)) {
+      const nx = { ...P, legs: P.legs.map(l => { const c = cur?.legs.find(x => x.evId === l.evId); return c && c.result && !l.result ? { ...l, result: c.result, final: c.final } : { ...l }; }) };
+      if (JSON.stringify(cur) !== JSON.stringify(nx)) { PARLAYS[k] = nx; ch++; }
+    }
+  });
+  if (ch) { saveMPicks(); saveDayPicks(); saveParlays(); }
+  return ch > 0;
+}
+async function loadLedger(force) {
+  if (LEDGER.busy) return LEDGER.busy;
+  if (!force && LEDGER.data && Date.now() - LEDGER.at < 10 * 60e3) return false;
+  LEDGER.busy = (async () => {
+    const get = u => fetch(u, { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+    const list = await Promise.all([get(`../data/ledger-${SYNC_SPORT}.json?t=${Date.now()}`), get(`https://raw.githubusercontent.com/abmendel/sideline/main/data/ledger-${SYNC_SPORT}.json`)]);
+    const L = list.filter(Boolean).sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')))[0] || null;
+    LEDGER.at = Date.now(); LEDGER.busy = null;
+    if (!L) return false;
+    LEDGER.data = L;
+    return mergeLedger(L);
+  })();
+  return LEDGER.busy;
+}
+function ledgerRefreshViews() {
+  try {
+    if (typeof renderBetBox === 'function' && state.tab === 'scores') renderBetBox('#betBox');
+    if (typeof renderBetBox === 'function' && state.tab === 'odds') renderBetBox('#oddsBet', true);
+    if (state.tab === 'picks') { if (typeof renderParlay === 'function' && document.getElementById('parlayBox')) { renderParlay(); renderModelPicks(); } else if (typeof renderPicks === 'function') renderPicks(); }
+  } catch (e) { console.error(e); }
+}
+
+/* ---------- your own picks, synced by code ---------- */
+const FB = { key: 'AIzaSyDm5tQ_cHacwFDjr3WmD3wkVw0n4Szk6p4', doc: code => `https://firestore.googleapis.com/v1/projects/badger-club-baseball/databases/(default)/documents/sideline/${encodeURIComponent(code)}` };
+const SYNCKEY = 'sideline.sync.code', TOMBKEY = `sideline.${SYNC_SPORT}.picks.removed.v1`;
+const SYNC = { code: null, status: 'off', at: 0, err: '', snap: {}, timer: null, busy: null, open: false };
+const TOMB = store.get(TOMBKEY, {});
+try { SYNC.code = localStorage.getItem(SYNCKEY) || null; } catch (e) {}
+const pickSig = p => { const { ts, ...rest } = p || {}; return JSON.stringify(rest); };
+SYNC.snap = Object.fromEntries(Object.entries(PICKS).map(([k, p]) => [k, pickSig(p)]));
+function syncNote() {                                   // called whenever picks are saved: stamp changes, remember removals
+  const now = Date.now(), seen = {};
+  Object.entries(PICKS).forEach(([k, p]) => { const s = pickSig(p); seen[k] = s; if (SYNC.snap[k] !== s) p.ts = now; });
+  Object.keys(SYNC.snap).forEach(k => { if (!PICKS[k]) TOMB[k] = now; });
+  SYNC.snap = seen;
+  try { localStorage.setItem(PKEY, JSON.stringify(PICKS)); } catch (e) {}
+  store.set(TOMBKEY, TOMB);
+  if (SYNC.code) { clearTimeout(SYNC.timer); SYNC.timer = setTimeout(() => syncNow(), 1500); }
+}
+function mergeRemote(R) {
+  if (!R) return false;
+  let ch = false;
+  Object.entries(R.removed || {}).forEach(([k, t]) => { if (!(TOMB[k] >= t)) TOMB[k] = t; });
+  Object.entries(R.picks || {}).forEach(([k, r]) => {
+    const l = PICKS[k];
+    if (TOMB[k] >= (r.ts || 0) && !(l && (l.ts || 0) > TOMB[k])) return;
+    if (!l || (r.ts || 0) > (l.ts || 0)) { const nx = l && l.result && !r.result ? { ...r, result: l.result, final: l.final } : { ...r }; if (pickSig(nx) !== pickSig(l)) { PICKS[k] = nx; ch = true; } }
+    else if (!l.result && r.result && pickSig({ ...l, result: null, final: null }) === pickSig({ ...r, result: null, final: null })) { l.result = r.result; if (r.final) l.final = r.final; ch = true; }
+  });
+  Object.keys(PICKS).forEach(k => { if (TOMB[k] && TOMB[k] >= (PICKS[k].ts || 0)) { delete PICKS[k]; ch = true; } });
+  const old = Date.now() - 200 * 864e5; Object.keys(TOMB).forEach(k => { if (TOMB[k] < old) delete TOMB[k]; });
+  store.set(TOMBKEY, TOMB);
+  if (ch) { store.set(PKEY, PICKS); SYNC.snap = Object.fromEntries(Object.entries(PICKS).map(([k, p]) => [k, pickSig(p)])); try { updateCounts(); } catch (e) {} }
+  return ch;
+}
+async function syncNow(opts = {}) {
+  if (!SYNC.code) return false;
+  if (SYNC.busy) return SYNC.busy;
+  SYNC.busy = (async () => {
+    SYNC.status = 'syncing'; renderSyncBar();
+    let changed = false;
+    try {
+      const r = await fetch(`${FB.doc(SYNC.code)}?key=${FB.key}`, { cache: 'no-store' });
+      if (r.status === 403) throw Object.assign(new Error('rules'), { rules: true });
+      if (!r.ok && r.status !== 404) throw new Error(`HTTP ${r.status}`);
+      const d = r.ok ? await r.json() : null, raw = d?.fields?.[SYNC_SPORT]?.stringValue;
+      const R = raw ? JSON.parse(raw) : null;
+      changed = mergeRemote(R);
+      const mine = JSON.stringify({ picks: PICKS, removed: TOMB, v: 1 });
+      if (!opts.pullOnly && mine !== raw) {
+        const w = await fetch(`${FB.doc(SYNC.code)}?key=${FB.key}&updateMask.fieldPaths=${SYNC_SPORT}&updateMask.fieldPaths=updated`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ fields: { [SYNC_SPORT]: { stringValue: mine }, updated: { timestampValue: new Date().toISOString() } } }) });
+        if (w.status === 403) throw Object.assign(new Error('rules'), { rules: true });
+        if (!w.ok) throw new Error(`HTTP ${w.status}`);
+      }
+      SYNC.status = 'on'; SYNC.at = Date.now(); SYNC.err = '';
+    } catch (e) {
+      SYNC.status = 'error'; SYNC.err = e.rules ? 'The online store isn’t accepting picks yet — the Firebase rule for Sideline still needs to be published.' : navigator.onLine === false ? 'You’re offline — picks will sync when you’re back online.' : `Couldn’t reach the sync store (${e.message}). It will try again.`;
+    }
+    SYNC.busy = null; renderSyncBar();
+    if (changed && state.tab === 'picks' && typeof renderPicks === 'function') renderPicks();
+    return changed;
+  })();
+  return SYNC.busy;
+}
+const newSyncCode = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789', b = crypto.getRandomValues(new Uint8Array(20)); let s = ''; b.forEach((x, i) => { s += a[x % a.length]; if (i % 5 === 4 && i < 19) s += '-'; }); return s; };
+const syncLink = () => `https://abmendel.github.io/sideline/#sync=${SYNC.code}`;
+function setSyncCode(code) {
+  SYNC.code = code || null;
+  try { if (code) localStorage.setItem(SYNCKEY, code); else localStorage.removeItem(SYNCKEY); } catch (e) {}
+  SYNC.status = code ? 'syncing' : 'off'; SYNC.err = '';
+  renderSyncBar(); if (code) syncNow();
+}
+function renderSyncBar() {
+  const box = document.getElementById('syncBar'); if (!box) return;
+  const ago = SYNC.at ? Math.max(0, Math.round((Date.now() - SYNC.at) / 60000)) : null;
+  let h;
+  if (!SYNC.code) h = `<div class="syncl"><b>☁️ Keep your picks on every device</b><span>Your own picks are saved in this browser. Turn on sync to back them up and see them on your phone and laptop.</span></div>
+    <div class="syncr">${SYNC.open ? `<input id="syncIn" placeholder="paste your sync code" autocomplete="off" spellcheck="false"><button class="pillbtn accbtn sm" id="syncJoin">Connect</button><button class="pillbtn glass sm" id="syncCancel">Cancel</button>` : `<button class="pillbtn accbtn sm" id="syncOn">Turn on sync</button><button class="pillbtn glass sm" id="syncHave">I have a code</button>`}</div>`;
+  else h = `<div class="syncl"><b>☁️ ${SYNC.status === 'error' ? 'Sync paused' : SYNC.status === 'syncing' ? 'Syncing…' : 'Picks synced'}</b><span>${SYNC.status === 'error' ? esc(SYNC.err) : `Same picks on every device with this code${ago != null ? ` · synced ${ago ? ago + ' min ago' : 'just now'}` : ''}.`} Code <code>${esc(SYNC.code)}</code></span></div>
+    <div class="syncr"><button class="pillbtn accbtn sm" id="syncCopy">Copy link for another device</button><button class="pillbtn glass sm" id="syncOff">Turn off</button></div>`;
+  box.className = 'panel glass syncbar'; box.innerHTML = h;
+  const on = (id, f) => { const b = document.getElementById(id); if (b) b.onclick = f; };
+  on('syncOn', () => setSyncCode(newSyncCode()));
+  on('syncHave', () => { SYNC.open = true; renderSyncBar(); document.getElementById('syncIn')?.focus(); });
+  on('syncCancel', () => { SYNC.open = false; renderSyncBar(); });
+  on('syncJoin', () => { const v = (document.getElementById('syncIn')?.value || '').trim().replace(/^.*#sync=/, '').toLowerCase(); if (v.length < 20) { toast('That code looks too short'); return; } SYNC.open = false; setSyncCode(v); toast('Connected — your picks will merge in'); });
+  on('syncCopy', async () => { try { await navigator.clipboard.writeText(syncLink()); toast('Link copied — open it on your other device'); } catch (e) { toast('Copy failed — the code is shown in the bar'); } });
+  on('syncOff', () => { setSyncCode(null); toast('Sync turned off on this device (your picks stay here)'); });
+}
+window.addEventListener('storage', e => { if (e.key === SYNCKEY && (e.newValue || null) !== SYNC.code) { SYNC.code = e.newValue || null; SYNC.status = SYNC.code ? 'syncing' : 'off'; renderSyncBar(); if (SYNC.code) syncNow(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { if (SYNC.code && Date.now() - SYNC.at > 60e3) syncNow({ pullOnly: false }); loadLedger().then(ch => { if (ch) ledgerRefreshViews(); }); } });
+setInterval(() => { if (SYNC.code) syncNow(); loadLedger(true).then(ch => { if (ch) ledgerRefreshViews(); }); }, 10 * 60e3);
+setTimeout(() => { loadLedger(true).then(ch => { if (ch) ledgerRefreshViews(); }); if (SYNC.code) syncNow(); renderSyncBar(); }, 300);
+try { window.SLX = { MPICKS, DAYPICKS, PARLAYS, PICKS, SYNC, syncNow, savePicks: () => savePicks() }; } catch (e) {}   // handle for checking the record from the browser console
 
 /* =====================================================================
    Start

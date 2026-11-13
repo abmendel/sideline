@@ -278,4 +278,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     try { await run(sp, console.log); } catch (e) { console.error(`${sp}: failed — ${e.message}`); if (!SPORTS[sp].draws) process.exitCode = 1; }   // a soccer league hiccup shouldn't raise the alarm
   }
 }
-export { run, SPORTS };
+export { run, SPORTS, featuresFor, probs3, oddsOf, Phi, newTeam };

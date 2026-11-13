@@ -81,7 +81,14 @@ window.addEventListener('message', e => {
     Object.values(frames).forEach(x => { if (x !== f) send(x, { type: 'theme', tv: theme }); });
   }
 });
-window.addEventListener('hashchange', () => show(location.hash.slice(1), true));
+function takeSync() {
+  const m = /^#sync=([a-z0-9-]{20,40})$/i.exec(location.hash || ''); if (!m) return false;
+  store.set('sideline.sync.code', m[1].toLowerCase());
+  try { history.replaceState(null, '', '#' + (store.get('hub.sport') || SPORTS[0].id)); } catch (e) {}
+  return true;
+}
+takeSync();
+window.addEventListener('hashchange', () => { if (takeSync()) return; show(location.hash.slice(1), true); });
 
 show(byId(location.hash.slice(1)) ? location.hash.slice(1) : byId(store.get('hub.sport')) ? store.get('hub.sport') : SPORTS[0].id);
 })();
