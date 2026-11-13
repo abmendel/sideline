@@ -2080,7 +2080,32 @@ function renderDetail() {
 function setFocus(lg) { if (!lg) return; SET.focus = lg; saveSet(); paintLgSel(); }
 function paintLgSel() { const el = $('#lgSel'); el.innerHTML = `${lgImg(SET.focus)}<span>${esc(lgFull(SET.focus))}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M6 9l6 6 6-6"/></svg>`; el.title = 'Choose a league'; }
 const standingsOf = lg => cached(`${SV2}/${lg}/standings`, 3e5);
-const teamsOf = async lg => { const d = await cached(`${S}/${lg}/teams?limit=500`, 864e5); return (d.sports?.[0]?.leagues?.[0]?.teams || []).map(x => x.team).filter(Boolean); };
+/* Every team in a league. ESPN's team-list address blocks other websites, so build the list from the
+   league table, or (cups, friendlies) from ESPN's core feed one team at a time; kept for a week. */
+const TKEY = 'pitchside.teams.v1';
+const TCACHE = store.get(TKEY, {});
+const slimT = t => ({ id: String(t.id), displayName: t.displayName || t.name || '', shortDisplayName: t.shortDisplayName || t.displayName || '', abbreviation: t.abbreviation || '', location: t.location || '', color: t.color || '', logo: teamLogo(t) });
+const TEAMS_P = {};
+async function teamsOf(lg) {
+  const c = TCACHE[lg]; if (c && c.list?.length && Date.now() - c.t < 7 * 864e5) return c.list;
+  if (TEAMS_P[lg]) return TEAMS_P[lg];
+  return TEAMS_P[lg] = (async () => {
+    let list = [];
+    const sd = await safe(standingsOf(lg));
+    (sd?.children || (sd?.standings ? [{ standings: sd.standings }] : [])).forEach(g => (g.standings?.entries || []).forEach(e => { if (e.team?.id && !list.some(x => x.id === String(e.team.id))) list.push(slimT(e.team)); }));
+    if (list.length < 2) {
+      const season = await seasonOf(lg);
+      const idx = await cached(`${CORE}/${lg}/seasons/${season.year}/teams?limit=300`, 864e5);
+      const refs = (idx.items || []).map(x => https(x.$ref)).filter(Boolean);
+      const got = await pool(refs, 8, u => safe(cached(u, 864e5)));
+      list = got.filter(t => t && t.id).map(slimT);
+    }
+    TEAMS_P[lg] = null;
+    if (!list.length) throw new Error('ESPN doesn’t list teams for this competition');
+    TCACHE[lg] = { t: Date.now(), list }; store.set(TKEY, TCACHE);
+    return list;
+  })().catch(e => { TEAMS_P[lg] = null; throw e; });
+}
 async function seasonOf(lg) {
   const sd = await safe(standingsOf(lg));
   if (sd && (sd.season?.year || sd.seasons?.[0]?.year)) { const s = sd.seasons?.[0] || {}; const ty = (s.types || []).find(t => t.hasStandings) || (s.types || [])[0]; return { year: sd.season?.year || s.year, type: ty?.id || '1', name: sd.season?.displayName || s.displayName || '' }; }
@@ -2195,13 +2220,18 @@ async function loadTeam() {
   const { lg, id } = T;
   try {
     const season = await seasonOf(lg);
-    const [tm, ro, res, fx, ts] = await Promise.all([
-      cached(`${S}/${lg}/teams/${id}`, 6e5), safe(cached(`${S}/${lg}/teams/${id}/roster`, 36e5)),
+    const [sd, ro, res, fx, ts] = await Promise.all([
+      safe(standingsOf(lg)), safe(cached(`${S}/${lg}/teams/${id}/roster`, 36e5)),
       safe(cached(`${S}/${lg}/teams/${id}/schedule`, 3e5)), safe(cached(`${S}/${lg}/teams/${id}/schedule?fixture=true`, 3e5)),
       safe(cached(`${CORE}/${lg}/seasons/${season.year}/types/${season.type}/teams/${id}/statistics`, 6e5))
     ]);
     if (state.team !== T) return;
-    Object.assign(T, { tm: tm.team || tm, ro, res, fx, ts: catMap(ts), season });
+    let entry = null; (sd?.children || (sd?.standings ? [{ standings: sd.standings }] : [])).forEach(g => (g.standings?.entries || []).forEach(e => { if (String(e.team?.id) === String(id)) entry = e; }));
+    let tm = res?.team || fx?.team || ro?.team || entry?.team || null;
+    if (!tm) { const list = await safe(teamsOf(lg)); tm = (list || []).find(x => x.id === String(id)); }
+    if (!tm) throw new Error('ESPN doesn’t have details for this team');
+    tm = { ...tm, id: String(tm.id), logo: teamLogo(tm) || teamLogo(entry?.team) };
+    Object.assign(T, { tm, entry, ro, res, fx, ts: catMap(ts), season });
     renderTeam();
   } catch (e) { if (state.team === T) renderError('#dBody', e, loadTeam); }
 }
@@ -2229,10 +2259,11 @@ function renderTeam() {
   const t = T.tm, lg = T.lg, ts = T.ts;
   $('#dTitle').textContent = t.displayName || 'Team';
   const col = hex(t.color) || '#555';
-  const recItem = (t.record?.items || [])[0];
-  const rs = n => num((recItem?.stats || []).find(s => s.name === n)?.value);
-  const gp = rs('gamesPlayed'), w = rs('wins'), dr = rs('ties'), l = rs('losses');
-  let h = `<div class="thead glass"><div class="glow" style="background:linear-gradient(120deg,${col},transparent 60%)"></div>${logoImg(t)}<div class="tx"><h2>${esc(t.displayName || '')}</h2><div class="sub">${esc(t.standingSummary || lgFull(lg))}${gp ? ` · ${w}W ${dr}D ${l}L · ${rs('points') ?? ''} pts` : ''}</div></div>
+  const E0 = T.entry, rs = n => E0 ? svn(E0, n) : null;
+  const rm = String(t.recordSummary || '').match(/^(\d+)-(\d+)-(\d+)$/);
+  const w = rs('wins') ?? (rm ? +rm[1] : null), dr = rs('ties') ?? (rm ? +rm[2] : null), l = rs('losses') ?? (rm ? +rm[3] : null);
+  const gp = rs('gamesPlayed') ?? (w != null ? w + dr + l : null);
+  let h = `<div class="thead glass"><div class="glow" style="background:linear-gradient(120deg,${col},transparent 60%)"></div>${logoImg(t)}<div class="tx"><h2>${esc(t.displayName || '')}</h2><div class="sub">${esc(t.standingSummary || lgFull(lg))}${gp ? ` · ${w}W ${dr}D ${l}L${rs('points') != null ? ` · ${rs('points')} pts` : ''}` : ''}</div></div>
     <button class="pillbtn ${isFavTeam(t.id) ? 'accbtn' : 'glass'} favbtn" id="tFav">${isFavTeam(t.id) ? '★ In My Teams' : '☆ Add to My Teams'}</button></div>`;
   if (ts) {
     const g = (c, n) => ts[c]?.[n];
