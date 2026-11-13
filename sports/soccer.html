@@ -2666,6 +2666,7 @@ function openModal(title) { $('#pTitle').textContent = title; $('#picker').class
 function closeModal() {
   $('#picker').classList.remove('open'); $('#mscrim').classList.remove('open');
   if (state.pickerDirty) { state.pickerDirty = false; state.events = []; loadScores(); }
+  if (state.tab === 'mine') loadMine(true);
 }
 async function openLeaguePicker(mode, after) {
   openModal(mode === 'follow' ? 'Leagues on your Scores page' : 'Choose a league');
