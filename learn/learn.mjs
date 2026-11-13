@@ -15,6 +15,10 @@ const SPORTS = {
   mlb: { path: 'baseball/mlb', mode: 'day', K: 4, hfa: 24, carry: .33, rest: false, sd: 4.2, lambda: 20 },
   nhl: { path: 'hockey/nhl', mode: 'day', K: 8, hfa: 35, carry: .3, rest: true, sd: 2.35, lambda: 20 }
 };
+/* Soccer: one model per league, three outcomes (home win, draw, away win) */
+const SOCCER = { draws: true, anyType: true, mode: 'day', K: 20, hfa: 60, carry: .3, rest: false, sd: 1.6, lambda: 20, minGames: 6 };
+export const SOCCER_LEAGUES = ['eng.1', 'esp.1', 'ger.1', 'ita.1', 'fra.1', 'usa.1', 'mex.1', 'uefa.champions'];
+SOCCER_LEAGUES.forEach(lg => { SPORTS[lg] = { ...SOCCER, path: `soccer/${lg}`, league: lg }; });
 const DATA = new URL('../data/', import.meta.url);
 const API = p => `https://site.api.espn.com/apis/site/v2/sports/${p}`;
 export const FEATURES = ['home', 'elo', 'margin', 'form', 'rest'];
@@ -62,7 +66,9 @@ function oddsOf(ev) {
   if (!o) return null;
   const cur = x => x?.current ?? x?.close ?? x?.open;
   const mlH = num(o.homeTeamOdds?.moneyLine ?? cur(o.moneyline?.home)?.odds), mlA = num(o.awayTeamOdds?.moneyLine ?? cur(o.moneyline?.away)?.odds);
-  const pH = implied(mlH), pA = implied(mlA);
+  const mlD = num(o.drawOdds?.moneyLine ?? cur(o.moneyline?.draw)?.odds);
+  const pH = implied(mlH), pA = implied(mlA), pD = implied(mlD);
+  if (pH != null && pA != null && pD != null) { const t = pH + pA + pD; return { fairH: pH / t, fairD: pD / t, fairA: pA / t, mlH, mlD, mlA }; }
   return pH != null && pA != null ? { fairH: pH / (pH + pA), mlH, mlA } : null;
 }
 const calDates = cal => (cal || []).flatMap(x => typeof x === 'string' ? [x] : x?.startDate ? [x.startDate] : x?.value && /^\d{4}-/.test(x.value) ? [x.value] : []).map(dayOf);
@@ -153,9 +159,9 @@ function featuresFor(H, A, date, neutral, S) {
 const newTeam = season => ({ elo: 1500, msum: 0, gp: 0, last: [], lastDate: null, season });
 
 export function train(sp, games, snaps, S = SPORTS[sp]) {
-  const all = Object.values(games).filter(g => (g.type === 2 || g.type === 3) && g.h && g.a);
+  const all = Object.entries(games).map(([id, g]) => ({ id, ...g })).filter(g => (S.anyType || g.type === 2 || g.type === 3) && g.h && g.a);
   const count = {}; all.forEach(g => { count[g.h] = (count[g.h] || 0) + 1; count[g.a] = (count[g.a] || 0) + 1; });
-  const real = id => (count[id] || 0) >= 8;                     // drops all-star and exhibition teams
+  const real = id => (count[id] || 0) >= (S.minGames || 8);                     // drops all-star and exhibition teams
   const done = all.filter(g => g.done && g.hs != null && g.as != null && real(g.h) && real(g.a)).sort((x, y) => new Date(x.date) - new Date(y.date));
   const seasons = [...new Set(all.map(g => g.season).filter(Boolean))].sort();
   const curSeason = seasons[seasons.length - 1] ?? null;
@@ -180,7 +186,12 @@ export function train(sp, games, snaps, S = SPORTS[sp]) {
     }
     const x = featuresFor(H, A, g.date, g.neutral, S), y = g.hs - g.as;
     const m = dot(w, x), p = Phi(m / sigma);
-    if (y !== 0) wf.push({ d, season: g.season, ok: (m > 0) === (y > 0), brier: (p - (y > 0 ? 1 : 0)) ** 2, home: y > 0, n: rows.length });
+    const pr = probs3(m, sigma, S), out = y > 0 ? 'H' : y < 0 ? 'A' : 'D';
+    const pred = S.draws ? (pr.h >= pr.a && pr.h >= pr.d ? 'H' : pr.a >= pr.d ? 'A' : 'D') : (m > 0 ? 'H' : 'A');
+    const sn = snaps[g.id], mk = sn && sn.fairH != null && (!sn.at || sn.at <= g.date) ? sn : null;
+    if (S.draws || y !== 0) wf.push({ id: g.id, date: g.date, d, season: g.season, h: g.h, a: g.a, hs: g.hs, as: g.as, pH: pr.h, pD: pr.d, pA: pr.a, pred, res: out, ok: pred === out, conf: Math.max(pr.h, pr.d, pr.a),
+      brier: S.draws ? (pr.h - (out === 'H')) ** 2 + (pr.d - (out === 'D')) ** 2 + (pr.a - (out === 'A')) ** 2 : (p - (y > 0 ? 1 : 0)) ** 2, home: y > 0, n: rows.length,
+      mk: mk ? { h: mk.fairH, d: mk.fairD ?? null, a: mk.fairA ?? (mk.fairD == null ? 1 - mk.fairH : null) } : null });
     resid.push(y - m);
     rows.push({ x, y, d });
     // Elo update with margin-of-victory multiplier
@@ -200,13 +211,13 @@ export function train(sp, games, snaps, S = SPORTS[sp]) {
   const scored = wf.filter(r => r.n >= 40);
   const months = {}; scored.forEach(r => { const k = `${r.d.slice(0, 4)}-${r.d.slice(4, 6)}`; (months[k] = months[k] || []).push(r); });
   const cutoff = ymd(new Date(Date.now() - 30 * 864e5));
-  const evalOut = { all: sum(scored), season: sum(scored.filter(r => r.season === curSeason)), last30: sum(scored.filter(r => r.d >= cutoff)), months: Object.entries(months).sort().map(([m, l]) => ({ m, ...sum(l) })) };
+  const evalOut = { all: sum(scored), season: sum(scored.filter(r => r.season === curSeason)), last30: sum(scored.filter(r => r.d >= cutoff)), months: Object.entries(months).sort().map(([m, l]) => ({ m, ...sum(l) })), ...trackerOf(scored, S) };
   // learned blend of model and market, from games where we saved pre-game odds
   const model = (id1, id2, date, neutral) => { const x = featuresFor(teams[id1] ? { ...teams[id1] } : newTeam(), teams[id2] ? { ...teams[id2] } : newTeam(), date, neutral, S); return dot(w, x); };
   Object.entries(snaps).forEach(([id, s]) => { const g = games[id]; if (g && !g.done && g.state === 'pre' && teams[g.h] && teams[g.a]) s.pModel = +Phi(model(g.h, g.a, g.date, g.neutral) / sigma).toFixed(4); });
   const bl = Object.entries(snaps).map(([id, s]) => ({ s, g: games[id] })).filter(({ s, g }) => g && g.done && g.hs !== g.as && s.pModel != null && s.fairH != null);
   let blend = null;
-  if (bl.length >= 100) {
+  if (!S.draws && bl.length >= 100) {
     let a = 0, wm = .5, wk = .5;                                 // logistic regression by gradient descent
     for (let it = 0; it < 3000; it++) {
       let ga = 0, gm = 0, gk = 0;
@@ -217,6 +228,31 @@ export function train(sp, games, snaps, S = SPORTS[sp]) {
     blend = { a: +a.toFixed(4), wModel: +wm.toFixed(4), wMarket: +wk.toFixed(4), n: bl.length, accModel: +acc(s => s.pModel).toFixed(4), accMarket: +acc(s => s.fairH).toFixed(4), accBlend: +acc(s => sigm(a + wm * logit(s.pModel) + wk * logit(s.fairH))).toFixed(4) };
   }
   return { sport: sp, version: 1, updated: new Date().toISOString(), features: FEATURES, w: w.map(v => +v.toFixed(4)), sigma: +sigma.toFixed(3), rest: S.rest, games: rows.length, seasons, curSeason, teams, eval: evalOut, blend, snapshots: Object.keys(snaps).length };
+}
+
+/* ------------------------------------------------------------------ accuracy tracker
+   Everything the dashboards' "Model" page shows: calibration, week-by-week accuracy, the most
+   recent graded predictions, accuracy on confident calls and a head-to-head with the betting market. */
+function probs3(m, sigma, S) {
+  if (!S.draws) { const p = Phi(m / sigma); return { h: p, d: 0, a: 1 - p }; }
+  const h = 1 - Phi((.5 - m) / sigma), a = Phi((-.5 - m) / sigma);
+  return { h, d: Math.max(0, 1 - h - a), a };
+}
+function trackerOf(scored, S) {
+  const r4 = v => v == null ? null : +v.toFixed(4);
+  const edges = S.draws ? [0, .4, .45, .5, .55, .6, .65, .7, 1.01] : [.5, .55, .6, .65, .7, .75, .8, .85, .9, 1.01];
+  const calib = edges.slice(0, -1).map((lo, i) => { const L = scored.filter(r => r.conf >= lo && r.conf < edges[i + 1]); return { lo, hi: Math.min(1, edges[i + 1]), n: L.length, p: r4(avg(L.map(r => r.conf))), hit: r4(avg(L.map(r => r.ok ? 1 : 0))) }; }).filter(b => b.n);
+  const monday = d => { const t = new Date(Date.UTC(+d.slice(0, 4), +d.slice(4, 6) - 1, +d.slice(6, 8))); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return ymd(t); };
+  const wk = {}; scored.forEach(r => (wk[monday(r.d)] ||= []).push(r));
+  const weeks = Object.entries(wk).sort().slice(-20).map(([w, L]) => ({ w, n: L.length, acc: r4(avg(L.map(r => r.ok ? 1 : 0))), brier: r4(avg(L.map(r => r.brier))) }));
+  const confCut = S.draws ? .55 : .65, conf = scored.filter(r => r.conf >= confCut);
+  const withMk = scored.filter(r => r.mk && r.mk.h != null);
+  const mkPred = r => S.draws && r.mk.d != null ? (r.mk.h >= r.mk.a && r.mk.h >= r.mk.d ? 'H' : r.mk.a >= r.mk.d ? 'A' : 'D') : (r.mk.h > .5 ? 'H' : 'A');
+  const mkBrier = r => S.draws && r.mk.d != null ? (r.mk.h - (r.res === 'H')) ** 2 + (r.mk.d - (r.res === 'D')) ** 2 + (r.mk.a - (r.res === 'A')) ** 2 : (r.mk.h - (r.res === 'H' ? 1 : 0)) ** 2;
+  const market = withMk.length ? { n: withMk.length, accModel: r4(avg(withMk.map(r => r.ok ? 1 : 0))), accMarket: r4(avg(withMk.map(r => mkPred(r) === r.res ? 1 : 0))), brierModel: r4(avg(withMk.map(r => r.brier))), brierMarket: r4(avg(withMk.map(mkBrier))), agree: r4(avg(withMk.map(r => mkPred(r) === r.pred ? 1 : 0))) } : null;
+  const recent = scored.slice(-40).reverse().map(r => ({ id: r.id, date: r.date, h: r.h, a: r.a, hs: r.hs, as: r.as, pH: r4(r.pH), pD: S.draws ? r4(r.pD) : undefined, pA: r4(r.pA), pred: r.pred, res: r.res, ok: r.ok, mk: r.mk ? r4(r.mk.h) : undefined }));
+  const base = S.draws ? { home: r4(avg(scored.map(r => r.res === 'H' ? 1 : 0))), draw: r4(avg(scored.map(r => r.res === 'D' ? 1 : 0))) } : { home: r4(avg(scored.map(r => r.res === 'H' ? 1 : 0))) };
+  return { draws: !!S.draws, calib, weeks, confident: { cut: confCut, n: conf.length, acc: r4(avg(conf.map(r => r.ok ? 1 : 0))) }, market, recent, base };
 }
 
 /* ------------------------------------------------------------------ main */
@@ -237,7 +273,7 @@ async function run(sp, log) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const want = process.argv.slice(2).filter(s => SPORTS[s]);
   for (const sp of want.length ? want : Object.keys(SPORTS)) {
-    try { await run(sp, console.log); } catch (e) { console.error(`${sp}: failed — ${e.message}`); process.exitCode = 1; }
+    try { await run(sp, console.log); } catch (e) { console.error(`${sp}: failed — ${e.message}`); if (!SPORTS[sp].draws) process.exitCode = 1; }   // a soccer league hiccup shouldn't raise the alarm
   }
 }
 export { run, SPORTS };

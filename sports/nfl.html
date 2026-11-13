@@ -844,6 +844,7 @@ td.nm .avatar{display:inline-grid;vertical-align:middle;margin-right:8px}
 .prow .avatar{width:36px;height:36px}
 .slot .avatar{flex:none}
 @media (max-width:640px){ .gl2{grid-template-columns:1fr} }
+.cmpbars{display:flex;flex-direction:column;gap:12px}.cb .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-variant-numeric:tabular-nums}.cb .lbl span:nth-child(2){color:var(--muted);font-size:12px}.cb .lbl b{font-weight:600}.cb .bars{display:flex;gap:4px;height:8px}.cb .bars i{display:block;height:100%;border-radius:6px}.cb .bars i.a{background:var(--away)}.cb .bars i.h{background:var(--home)}.cb .bars div{flex:1;display:flex;background:rgba(var(--fg),.06);border-radius:6px;overflow:hidden}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}#modelTrack .orow{grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 60px!important}@media (max-width:640px){#modelTrack .orow{grid-template-columns:1fr 1fr!important}.three{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -860,6 +861,7 @@ td.nm .avatar{display:inline-grid;vertical-align:middle;margin-right:8px}
       <button class="nav" data-tab="matchup" data-label="Matchups" aria-label="Matchups"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M5 7h4l-4 8h4M15 7h4l-4 8h4"/><path d="M3 21h18"/></svg></span>Matchups</button>
       <button class="nav" data-tab="compare" data-label="Compare" aria-label="Compare"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4v16M16 4v16M3 9h5M16 15h5"/></svg></span>Compare</button>
       <button class="nav" data-tab="season" data-label="Season stats" aria-label="Season stats"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>Season stats</button>
+      <button class="nav" data-tab="model" data-label="Model accuracy" aria-label="Model accuracy"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/></svg></span>Model</button>
       <button class="nav" data-tab="standings" data-label="Standings" aria-label="Standings"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Standings</button>
       <button class="nav" data-tab="news" data-label="News" aria-label="News"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h10M7 17h6"/></svg></span>News</button>
     </div>
@@ -930,6 +932,7 @@ td.nm .avatar{display:inline-grid;vertical-align:middle;margin-right:8px}
 
     <section id="view-season" class="hidden"><div id="season"></div></section>
 
+    <section id="view-model" class="hidden"><div id="modelTrack"></div></section>
     <section id="view-standings" class="hidden">
       <div class="stand-grid" id="standings"></div>
       <div class="keyrow"><span><i style="background:var(--acc)"></i>Division leader (1–4)</span><span><i style="background:var(--inv-bg)"></i>Wild card (5–7)</span><span style="color:var(--dim)">Click a column to sort</span></div>
@@ -3271,6 +3274,7 @@ async function openPicker(mode, slotIdx) {
    Settings
    ===================================================================== */
 function rerenderAll() {
+  if (state.tab === 'model') renderTracker();
   if (state.events.length) renderScores();
   if (state.tab === 'odds') renderOdds();
   if (state.tab === 'mine') renderMine();
@@ -3432,7 +3436,7 @@ function schedule() {
   state.nextAt = Date.now() + ms;
   state.timer = setTimeout(tick, ms);
 }
-const VIEWS = ['scores', 'standings', 'news', 'mine', 'odds', 'picks', 'compare', 'season', 'matchup'];
+const VIEWS = ['scores', 'standings', 'news', 'mine', 'odds', 'picks', 'compare', 'season', 'matchup', 'model'];
 function setTab(tab) {
   state.tab = tab;
   $$('#tabs .nav').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
@@ -3441,7 +3445,8 @@ function setTab(tab) {
   $('#standSeason').classList.toggle('hidden', tab !== 'standings');
   $('#teamSearch').closest('.search').classList.toggle('hidden', tab !== 'scores');
   try { history.replaceState(null, '', '#' + tab); } catch (e) {}
-  if (tab === 'standings') { if (state.standings) renderStandings(); loadStandings(!!state.standings).then(schedule); }
+  if (tab === 'model') { renderTracker(); schedule(); }
+  else   if (tab === 'standings') { if (state.standings) renderStandings(); loadStandings(!!state.standings).then(schedule); }
   else if (tab === 'news') loadNews(!!state.news).then(schedule);
   else if (tab === 'mine') loadMine(true).then(schedule);
   else if (tab === 'picks') loadPicks().then(schedule);
@@ -3490,6 +3495,76 @@ let rT; window.addEventListener('resize', () => { clearTimeout(rT); rT = setTime
   if (state.tab === 'compare' && CMP[0] && CMP[1]) renderCompare();
   if (state.openId && state.detail) renderDetail();
 }, 150); });
+
+
+/* =====================================================================
+   Model accuracy tracker — how the learning model has done, graded on
+   games it hadn't seen yet (from the nightly trainer's walk-forward run)
+   ===================================================================== */
+const pct0 = v => v == null || isNaN(v) ? '—' : Math.round(v * 100) + '%';
+function trkTeam(id) { const t = teamById(id); return t || { id, abbreviation: '#' + id, displayName: 'Team ' + id }; }
+function renderTracker() {
+  const box = $('#modelTrack'); if (!box) return;
+  const M = LEARN.model;
+  if (!M) {
+    box.innerHTML = '<div class="skeleton" style="height:140px"></div><div class="skeleton" style="height:320px;margin-top:16px"></div>';
+    loadLearned().then(m => { if (state.tab !== 'model') return; if (m) renderTracker(); else box.innerHTML = `<div class="empty glass"><h3>The model hasn’t published yet</h3><p>Its first nightly training run writes the accuracy report. Check back after the next run.</p></div>`; });
+    return;
+  }
+  const E = M.eval || {}, S = E.season?.n >= 20 ? E.season : E.all || {};
+  const ago = h => h < 1 ? 'less than an hour ago' : h < 48 ? Math.round(h) + ' hours ago' : Math.round(h / 24) + ' days ago';
+  const tile = (k, v, s, hl) => `<div class="tile ${hl ? 'hl' : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const edge = S.acc != null && E.base?.home != null ? S.acc - (E.all?.homeAcc ?? E.base.home) : null;
+  let h = `${staleNote()}<div class="sechead" style="margin-top:0"><h2>Model accuracy</h2><span class="sub">every ${esc(SPORTX.unit === 'week' ? 'game' : 'game')} predicted before it was played, using only earlier results, then graded · retrained ${esc(ago(learnAge() || 0))}</span></div>
+    <div class="tiles glass" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));height:auto;margin-bottom:16px">
+      ${tile(E.season?.n >= 20 ? 'This season' : 'All graded games', pctS(S.acc), `${(S.n || 0).toLocaleString()} games picked right`, true)}
+      ${tile('Last 30 days', pctS(E.last30?.acc), `${(E.last30?.n || 0).toLocaleString()} games`)}
+      ${tile('Both seasons', pctS(E.all?.acc), `${(E.all?.n || 0).toLocaleString()} games graded`)}
+      ${tile('Confident calls', pctS(E.confident?.acc), `when it gave ${pct0(E.confident?.cut)}+ · ${(E.confident?.n || 0).toLocaleString()} games`)}
+      ${tile('Home team every time', pctS(E.all?.homeAcc ?? E.base?.home), edge != null ? `model is ${edge >= 0 ? '+' : ''}${(edge * 100).toFixed(1)} pts better` : 'the simplest baseline')}
+      ${tile('Brier score', E.all?.brier != null ? E.all.brier.toFixed(3) : '—', 'lower is better · a coin flip scores 0.250')}
+    </div>`;
+  // accuracy over time
+  const weeks = (E.weeks || []).filter(w => w.n >= 3);
+  if (weeks.length) {
+    const lo = .3, hi = .9, ht = v => Math.max(4, Math.min(100, (v - lo) / (hi - lo) * 100));
+    h += `<div class="panel glass" style="margin-bottom:16px">${panelHead('Accuracy week by week', `last ${weeks.length} weeks · hover a bar for details`, IC.wp)}
+      <div class="mc-bars" style="height:170px">${weeks.map(w => { const d = new Date(+w.w.slice(0, 4), +w.w.slice(4, 6) - 1, +w.w.slice(6, 8)); return `<div title="Week of ${esc(d.toLocaleDateString([], { month: 'short', day: 'numeric' }))}: ${Math.round(w.acc * 100)}% of ${w.n} games · Brier ${w.brier}"><em>${Math.round(w.acc * 100)}%</em><i style="height:${ht(w.acc)}%;${w.acc < (E.all?.homeAcc ?? .5) ? 'opacity:.55' : ''}"></i><small>${esc(d.toLocaleDateString([], { month: 'numeric', day: 'numeric' }))}</small></div>`; }).join('')}</div>
+      <p class="note" style="margin-top:8px">Faded bars are weeks where it did worse than just picking the home team. Small weeks swing a lot, so look at the trend.</p></div>`;
+  }
+  // calibration + market
+  const cal = (E.calib || []).filter(b => b.n >= 5);
+  const calHtml = cal.length ? `<div class="cmpbars">${cal.map(b => `<div class="cb"><div class="lbl"><b>Said ${pct0(b.lo)}–${pct0(b.hi)}</b><span>${b.n.toLocaleString()} games</span><b>won ${pct0(b.hit)}</b></div><div class="bars"><div><i class="h" style="width:${(b.p * 100).toFixed(1)}%;margin-left:auto" title="Average predicted ${pct0(b.p)}"></i></div><div><i class="a" style="width:${(b.hit * 100).toFixed(1)}%;margin-left:0" title="Actually won ${pct0(b.hit)}"></i></div></div></div>`).join('')}</div>
+    <p class="note" style="margin-top:10px">Left bar: how sure the model was about its pick. Right bar: how often that pick actually won. When the two match, its percentages can be taken at face value.</p>` : '<div class="muted">Fills in as games are graded.</div>';
+  const mk = E.market, B = M.blend;
+  const mkHtml = mk && mk.n >= 10 ? `<div class="three" style="grid-template-columns:repeat(2,1fr)">
+      ${tile('Model', pctS(mk.accModel), `Brier ${mk.brierModel?.toFixed(3) ?? '—'}`)}${tile('DraftKings favorite', pctS(mk.accMarket), `Brier ${mk.brierMarket?.toFixed(3) ?? '—'}`)}</div>
+      <p class="note">On the ${mk.n.toLocaleString()} games where a pre-game line was saved. They picked the same side ${pct0(mk.agree)} of the time.${B ? ` The learned mix of both has been right ${pctS(B.accBlend)} (${B.n} games), and the market currently gets ${B.wMarket > B.wModel ? 'more' : 'less'} weight than the model.` : ''}</p>`
+    : `<p class="muted" style="margin:0">The trainer saves DraftKings’ line before every game. Once ${mk ? `more than ${mk.n}` : 'enough'} of those games have finished, this compares the model with the market head to head.</p>${B ? `<p class="note">Learned mix so far: ${pctS(B.accBlend)} over ${B.n} games.</p>` : ''}`;
+  h += `<div class="ins-grid" style="margin-bottom:16px"><div class="panel glass">${panelHead('Calibration', 'are its percentages honest?', IC.st)}${calHtml}</div><div class="panel glass">${panelHead('Model vs the betting market', 'same games, head to head', IC.$ || IC.wp)}${mkHtml}</div></div>`;
+  // pick of the day record + months
+  const R = dayRecord();
+  const months = (E.months || []).filter(m => m.n >= 5).slice(-12).reverse();
+  h += `<div class="ins-grid" style="margin-bottom:16px"><div class="panel glass">${panelHead(`Pick of the ${SPORTX.unit} record`, 'saved in this browser', IC.wp)}
+      ${R.n ? `<div class="three" style="grid-template-columns:repeat(2,1fr)">${tile('Record', `${R.w}–${R.l}`, `${pct0(R.w / R.n)} hit rate`)}${tile(`Last ${R.last.length}`, `<span class="betrec" style="font-size:inherit"><span class="dots">${R.last.map(x => `<i class="${x.result === 'W' ? 'w' : ''}" title="${esc(x.final || '')}"></i>`).join('')}</span></span>`, 'oldest to newest')}</div>` : `<p class="muted" style="margin:0">No graded picks of the ${esc(SPORTX.unit)} yet. Each one is saved when you open the dashboard and graded after the final.</p>`}</div>
+    <div class="panel glass">${panelHead('By month', 'games graded and accuracy', IC.st)}${months.length ? `<div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Games</th><th>Right</th><th>Brier</th></tr></thead><tbody>${months.map(m => `<tr><td>${esc(new Date(+m.m.slice(0, 4), +m.m.slice(5, 7) - 1, 15).toLocaleDateString([], { month: 'long', year: 'numeric' }))}</td><td>${m.n}</td><td><b>${pctS(m.acc)}</b></td><td>${m.brier?.toFixed(3) ?? '—'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="muted">No months graded yet.</div>'}</div></div>`;
+  // recent predictions
+  const rec = E.recent || [];
+  if (rec.length) {
+    const ok = rec.filter(r => r.ok).length;
+    const shown = state.trkAll ? rec : rec.slice(0, 15);
+    h += `<div class="panel glass">${panelHead('Latest graded predictions', `${ok} of ${rec.length} right`, IC.pl, rec.length > 15 ? `<span class="spacer"></span><button class="pillbtn glass sm" id="trkAll">${state.trkAll ? 'Show fewer' : `Show all ${rec.length}`}</button>` : '')}<div class="oddsboard">${shown.map(r => {
+      const H = trkTeam(r.h), A = trkTeam(r.a), pick = r.pred === 'H' ? H : A, p = r.pred === 'H' ? r.pH : r.pA;
+      return `<div class="orow" style="grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 90px 60px;cursor:default"><span class="muted">${esc(new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span>
+        <div class="omatch"><div class="t">${logoImg(A)}${esc(A.abbreviation || A.displayName)} <b style="margin-left:auto;font-variant-numeric:tabular-nums">${esc(r.as)}</b></div><div class="t">${logoImg(H)}${esc(H.abbreviation || H.displayName)} <b style="margin-left:auto;font-variant-numeric:tabular-nums">${esc(r.hs)}</b></div></div>
+        <div class="ocell"><span>Picked <b>${esc(pick.abbreviation || pick.displayName)}</b></span><span class="muted">${pct0(p)} chance${r.mk != null ? ` · DK ${pct0(r.pred === 'H' ? r.mk : 1 - r.mk)}` : ''}</span></div>
+        <span>${r.ok ? '<span class="chip win">✓</span>' : '<span class="chip loss">✗</span>'}</span></div>`;
+    }).join('')}</div></div>`;
+  }
+  h += `<p class="rg">How it’s graded: the nightly trainer replays the last two seasons in order. Before each game it predicts the winner using only games already played, then checks the result. That’s the same information the dashboard has before a real game, so these numbers are a fair preview of how it does live. Accuracy counts the side it gave over 50%.</p>`;
+  box.innerHTML = h;
+  const ta = $('#trkAll'); if (ta) ta.onclick = () => { state.trkAll = !state.trkAll; renderTracker(); };
+}
 
 /* =====================================================================
    Start

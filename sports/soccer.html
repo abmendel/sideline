@@ -855,6 +855,7 @@ td.nm .avatar{display:inline-grid;vertical-align:middle;margin-right:8px}
 .rink .bip{cursor:pointer}
 td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
 .probrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cmpbars{display:flex;flex-direction:column;gap:12px}.cb .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-variant-numeric:tabular-nums}.cb .lbl span:nth-child(2){color:var(--muted);font-size:12px}.cb .lbl b{font-weight:600}.cb .bars{display:flex;gap:4px;height:8px}.cb .bars i{display:block;height:100%;border-radius:6px}.cb .bars i.a{background:var(--away)}.cb .bars i.h{background:var(--home)}.cb .bars div{flex:1;display:flex;background:rgba(var(--fg),.06);border-radius:6px;overflow:hidden}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}#modelTrack .orow{grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 60px!important}@media (max-width:640px){#modelTrack .orow{grid-template-columns:1fr 1fr!important}.three{grid-template-columns:1fr 1fr}}
 /* ===================== Soccer additions ===================== */
 .lgbar{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px;margin:0 0 14px}
 .lgbar::-webkit-scrollbar{display:none}
@@ -1017,6 +1018,7 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
       <button class="nav" data-tab="standings" data-label="Tables" aria-label="Tables"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Tables</button>
       <button class="nav" data-tab="teams" data-label="Teams" aria-label="Teams"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/></svg></span>Teams</button>
       <button class="nav" data-tab="season" data-label="Stats" aria-label="Stats"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>Stats</button>
+      <button class="nav" data-tab="model" data-label="Model accuracy" aria-label="Model accuracy"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/></svg></span>Model</button>
       <button class="nav" data-tab="news" data-label="News" aria-label="News"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h10M7 17h6"/></svg></span>News</button>
     </div>
     <div class="grow"></div>
@@ -1080,6 +1082,7 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
     <section id="view-standings" class="hidden"><div id="standings"></div></section>
     <section id="view-teams" class="hidden"><div id="teams"></div></section>
     <section id="view-season" class="hidden"><div id="season"></div></section>
+    <section id="view-model" class="hidden"><div id="modelTrack"></div></section>
     <section id="view-news" class="hidden"><div class="news" id="news"></div></section>
     <p class="note" style="text-align:center;margin-top:28px">Data from ESPN’s public soccer feeds · updates every 15s while matches are live, otherwise every 60s · times in your local time zone</p>
   </main>
@@ -1469,7 +1472,7 @@ function modelFor(ev) {
   return outcome(1.3 * Math.exp(.33 * diff), 1.1 * Math.exp(-.33 * diff));
 }
 function blend(ev) {
-  const m = modelFor(ev), o = oddsForEvent(ev);
+  const m = learnedFor(ev) || modelFor(ev), o = oddsForEvent(ev);
   const mk = o && o.fairH != null ? { h: o.fairH, d: o.fairD, a: o.fairA } : null;
   if (!m && !mk) return null;
   const p = m && mk ? { h: (m.h + mk.h) / 2, d: (m.d + mk.d) / 2, a: (m.a + mk.a) / 2 } : (m || mk);
@@ -1508,7 +1511,7 @@ async function loadScores(silent) {
     evs.sort((a, b) => new Date(a.date) - new Date(b.date));
     state.boards = boards; state.events = evs;
     state.error = null; state.lastOk = Date.now();
-    gradePicks(evs); gradeDayPicks(evs);
+    gradePicks(evs); gradeDayPicks(evs); warmLearned();
     if (state.tab === 'scores') renderScores();
     if (state.tab === 'odds') renderOdds();
   } catch (e) {
@@ -1769,7 +1772,7 @@ function renderBetBox(sel, wide) {
   const dLabel = fromYmd(key).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   const head = `<div class="tag"><span class="ic">🎯</span>Pick of the day · ${esc(key === today ? 'today' : dLabel)}</div>`;
   const recLine = R.n ? `<div class="betrec"><span>Record <b>${R.w}–${R.l}</b> (${Math.round(R.w / R.n * 100)}%)</span><span class="dots">${R.last.map(x => `<i class="${x.result === 'W' ? 'w' : ''}" title="${esc(x.final || '')}"></i>`).join('')}</span></div>` : '';
-  const fine = `<div class="betfine">The day’s pick is the single team most likely to win, averaging a points-per-game and form model with DraftKings’ three-way line (margin removed). A draw counts as a miss. It locks at kick-off. For fun only, 21+.</div>`;
+  const fine = `<div class="betfine">The day’s pick is the single team most likely to win, averaging our model (nightly-trained ratings for the eight biggest competitions, points-per-game and form elsewhere) with DraftKings’ three-way line (margin removed). A draw counts as a miss. It locks at kick-off. For fun only, 21+.</div>`;
   let main, nums = '', alt = '';
   if (dp) {
     const ev = state.events.find(e => String(e.id) === dp.evId);
@@ -2019,7 +2022,8 @@ function renderDetail() {
       </div>
       ${o.tot != null ? `<p class="note" style="margin-top:10px">Total goals ${esc(o.tot)}${o.over != null ? ` · Over ${esc(fmtAm(o.over))} / Under ${esc(fmtAm(o.under))}` : ''}${o.totO != null && o.totO !== o.tot ? ` · opened ${esc(o.totO)}` : ''}</p>` : ''}
       ${o.fairH != null ? `<div class="sublabel">Fair chances</div><div class="probbar three-way"><i style="width:${(o.fairH * 100).toFixed(1)}%;background:var(--home)"></i><i style="width:${(o.fairD * 100).toFixed(1)}%"></i><i style="width:${(o.fairA * 100).toFixed(1)}%;background:var(--away)"></i></div>
-        <div class="probnums three-way"><span>${esc(ha)} ${pct(o.fairH)}</span><span>Draw ${pct(o.fairD)}</span><span>${esc(aa)} ${pct(o.fairA)}</span></div>` : ''}</div>`;
+        <div class="probnums three-way"><span>${esc(ha)} ${pct(o.fairH)}</span><span>Draw ${pct(o.fairD)}</span><span>${esc(aa)} ${pct(o.fairA)}</span></div>` : ''}
+      ${(() => { const md = ev ? (learnedFor(ev) || modelFor(ev)) : null; return md && st === 'pre' ? `<p class="note" style="margin-top:8px">${md.learned ? 'Trained model' : 'Form model'}: ${esc(ha)} ${pct(md.h)} · Draw ${pct(md.d)} · ${esc(aa)} ${pct(md.a)}</p>` : ''; })()}</div>`;
   }
 
   h += timelineHtml(d, home);
@@ -2421,6 +2425,105 @@ function scatterSvg(rows) {
 }
 
 /* =====================================================================
+   Learned model (nightly trainer) for the big leagues + accuracy tracker
+   ===================================================================== */
+const TRAINED = ['eng.1', 'esp.1', 'ger.1', 'ita.1', 'fra.1', 'usa.1', 'mex.1', 'uefa.champions'];
+const LEARNED = {}, LEARN_AT = {}, LEARN_P = {};
+function loadLearned(lg) {
+  if (!TRAINED.includes(lg)) return Promise.resolve(null);
+  if (LEARN_AT[lg] && Date.now() - LEARN_AT[lg] < 36e5) return Promise.resolve(LEARNED[lg]);
+  if (LEARN_P[lg]) return LEARN_P[lg];
+  const get = u => fetch(u, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  return LEARN_P[lg] = Promise.all([get(`../data/model-${lg}.json`), get(`https://raw.githubusercontent.com/abmendel/sideline/main/data/model-${lg}.json`)]).then(list => {
+    const ok = list.filter(m => m && Array.isArray(m.w) && m.teams).sort((a, b) => new Date(b.updated) - new Date(a.updated));
+    LEARN_P[lg] = null; LEARN_AT[lg] = Date.now(); if (ok[0]) LEARNED[lg] = ok[0]; return LEARNED[lg] || null;
+  });
+}
+const erf = x => { const t = 1 / (1 + .3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
+const Phi = z => .5 * (1 + erf(z / Math.SQRT2));
+/* same features and goal-difference model as the trainer, turned into home / draw / away */
+function learnedFor(ev) {
+  const M = LEARNED[ev._lg]; if (!M || M.games < 60) return null;
+  const { c, home, away } = compOf(ev);
+  const H = M.teams[String(home.team?.id)], A = M.teams[String(away.team?.id)]; if (!H || !A) return null;
+  const avg = a => a && a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
+  const x = [c.neutralSite ? 0 : 1, (H.elo - A.elo) / 100, H.msum / (H.gp + 4) - A.msum / (A.gp + 4), avg(H.last) - avg(A.last), 0];
+  const m = M.w.reduce((s, w, i) => s + w * (x[i] || 0), 0), sg = M.sigma || 1.6;
+  const h = 1 - Phi((.5 - m) / sg), a = Phi((-.5 - m) / sg);
+  return { h, d: Math.max(0, 1 - h - a), a, learned: true };
+}
+function warmLearned() {
+  const lgs = [...new Set(SET.leagues.filter(l => TRAINED.includes(l)))];
+  Promise.all(lgs.map(loadLearned)).then(() => { if (lgs.some(l => LEARNED[l]) && state.tab === 'scores' && state.events.length) renderScores(); });
+}
+
+const TEAMNAMES = {};
+async function teamNames(lg) { if (TEAMNAMES[lg]) return TEAMNAMES[lg]; const list = await safe(teamsOf(lg)); const m = {}; (list || []).forEach(t => m[t.id] = t); TEAMNAMES[lg] = m; return m; }
+async function renderTracker() {
+  const box = $('#modelTrack');
+  if (!state.trkLg || !TRAINED.includes(state.trkLg)) state.trkLg = TRAINED.includes(SET.focus) ? SET.focus : 'eng.1';
+  const lg = state.trkLg;
+  const seg = `<div class="seg" id="trkLg" style="max-width:100%;overflow-x:auto;flex-wrap:nowrap">${TRAINED.map(l => `<button data-v="${l}" class="${l === lg ? 'on' : ''}">${esc(lgName(l))}</button>`).join('')}</div>`;
+  if (!box.innerHTML || !LEARNED[lg]) box.innerHTML = `<div class="sechead" style="margin-top:0"><h2>Model accuracy</h2><span class="spacer"></span>${seg}</div><div class="skeleton" style="height:140px"></div><div class="skeleton" style="height:320px;margin-top:16px"></div>`;
+  bindTrkSeg();
+  const [M] = await Promise.all([loadLearned(lg), Promise.all(TRAINED.map(loadLearned))]);
+  const names = await teamNames(lg);
+  if (state.tab !== 'model' || state.trkLg !== lg) return;
+  if (!M) {
+    box.innerHTML = `<div class="sechead" style="margin-top:0"><h2>Model accuracy</h2><span class="spacer"></span>${seg}</div><div class="empty glass"><h3>No trained model for ${esc(lgFull(lg))} yet</h3><p>The nightly trainer learns the eight biggest competitions. Its first run publishes the report; until then match predictions use a simple points-per-game and form model.</p></div>`;
+    bindTrkSeg(); return;
+  }
+  const E = M.eval || {}, Sx = E.season?.n >= 20 ? E.season : E.all || {};
+  const tile = (k, v, s, hl) => `<div class="tile ${hl ? 'hl' : ''}"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  const ageH = (Date.now() - new Date(M.updated)) / 36e5;
+  const pctS = v => v == null || isNaN(v) ? '—' : (v * 100).toFixed(1) + '%';
+  let h = `<div class="sechead" style="margin-top:0"><h2>Model accuracy</h2><span class="sub">every match predicted before it was played, using only earlier results · home win, draw or away win</span><span class="spacer"></span>${seg}</div>`;
+  if (ageH > 36) h += `<div class="banner">⚠️ <div>The ${esc(lgName(lg))} model hasn’t retrained in ${ageH < 72 ? Math.round(ageH) + ' hours' : Math.round(ageH / 24) + ' days'}. Check the “Retrain prediction models” job in GitHub Actions.</div></div>`;
+  // league by league
+  const rows = TRAINED.filter(l => LEARNED[l]?.eval?.all?.n).map(l => { const e = LEARNED[l].eval; const s = e.season?.n >= 20 ? e.season : e.all; return { l, n: s.n, acc: s.acc, home: e.base?.home ?? e.all.homeAcc, draw: e.base?.draw, brier: e.all.brier, last30: e.last30 }; });
+  h += `<div class="tiles glass" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));height:auto;margin-bottom:16px">
+    ${tile(E.season?.n >= 20 ? 'This season' : 'All graded matches', pctS(Sx.acc), `${(Sx.n || 0).toLocaleString()} matches · result called right`, true)}
+    ${tile('Last 30 days', pctS(E.last30?.acc), `${(E.last30?.n || 0).toLocaleString()} matches`)}
+    ${tile('Both seasons', pctS(E.all?.acc), `${(E.all?.n || 0).toLocaleString()} matches graded`)}
+    ${tile('Confident calls', pctS(E.confident?.acc), `when it gave ${Math.round((E.confident?.cut || .55) * 100)}%+ · ${(E.confident?.n || 0).toLocaleString()} matches`)}
+    ${tile('Home team every time', pctS(E.base?.home ?? E.all?.homeAcc), `draws happen ${pctS(E.base?.draw)}`)}
+    ${tile('Brier score', E.all?.brier != null ? E.all.brier.toFixed(3) : '—', 'three outcomes · lower is better · guessing a third each scores 0.667')}
+  </div>`;
+  if (rows.length > 1) h += `<div class="panel glass" style="margin-bottom:16px">${panelHead('League by league', 'this season where there are 20+ graded matches, otherwise both seasons', IC.tb)}<div class="tbl-wrap"><table><thead><tr><th>League</th><th>Matches</th><th>Right</th><th>Home every time</th><th>Draw rate</th><th>Last 30 days</th><th>Brier</th></tr></thead><tbody>${rows.map(r => `<tr data-trk="${esc(r.l)}" style="cursor:pointer" class="${r.l === lg ? 'myteam' : ''}"><td><div class="teamcell">${lgImg(r.l).replace('class="', 'style="width:22px;height:22px;border-radius:50%;background:#fff;padding:2px" class="')}<span>${esc(lgFull(r.l))}</span></div></td><td>${r.n.toLocaleString()}</td><td><b>${pctS(r.acc)}</b></td><td>${pctS(r.home)}</td><td>${pctS(r.draw)}</td><td>${r.last30?.n ? pctS(r.last30.acc) : '—'}</td><td>${r.brier?.toFixed(3) ?? '—'}</td></tr>`).join('')}</tbody></table></div></div>`;
+  const weeks = (E.weeks || []).filter(w => w.n >= 3);
+  if (weeks.length) {
+    const lo = .2, hi = .8, ht = v => Math.max(4, Math.min(100, (v - lo) / (hi - lo) * 100)), base = E.base?.home ?? .45;
+    h += `<div class="panel glass" style="margin-bottom:16px">${panelHead('Accuracy week by week', `${esc(lgName(lg))} · last ${weeks.length} weeks with matches`, IC.st)}
+      <div class="mc-bars" style="height:170px">${weeks.map(w => { const d = new Date(+w.w.slice(0, 4), +w.w.slice(4, 6) - 1, +w.w.slice(6, 8)); return `<div title="Week of ${esc(d.toLocaleDateString([], { month: 'short', day: 'numeric' }))}: ${Math.round(w.acc * 100)}% of ${w.n} matches"><em>${Math.round(w.acc * 100)}%</em><i style="height:${ht(w.acc)}%;${w.acc < base ? 'opacity:.55' : ''}"></i><small>${esc(d.toLocaleDateString([], { month: 'numeric', day: 'numeric' }))}</small></div>`; }).join('')}</div>
+      <p class="note" style="margin-top:8px">Faded bars are weeks where it did worse than picking the home team every time. Soccer is hard to call: about one match in four is a draw, so 50%+ is good.</p></div>`;
+  }
+  const cal = (E.calib || []).filter(b => b.n >= 5);
+  const calHtml = cal.length ? `<div class="cmpbars">${cal.map(b => `<div class="cb"><div class="lbl"><b>${b.lo ? `Said ${Math.round(b.lo * 100)}–${Math.round(b.hi * 100)}%` : `Said under ${Math.round(b.hi * 100)}%`}</b><span>${b.n.toLocaleString()} matches</span><b>right ${Math.round(b.hit * 100)}%</b></div><div class="bars"><div><i class="h" style="width:${(b.p * 100).toFixed(1)}%;margin-left:auto"></i></div><div><i class="a" style="width:${(b.hit * 100).toFixed(1)}%;margin-left:0"></i></div></div></div>`).join('')}</div><p class="note" style="margin-top:10px">Left: how likely the model thought its called result was. Right: how often that result happened.</p>` : '<div class="muted">Fills in as matches are graded.</div>';
+  const mk = E.market;
+  const mkHtml = mk && mk.n >= 10 ? `<div class="three" style="grid-template-columns:repeat(2,1fr)">${tile('Model', pctS(mk.accModel), `Brier ${mk.brierModel?.toFixed(3) ?? '—'}`)}${tile('DraftKings favorite', pctS(mk.accMarket), `Brier ${mk.brierMarket?.toFixed(3) ?? '—'}`)}</div><p class="note">On ${mk.n.toLocaleString()} matches with a saved pre-match line. They called the same result ${Math.round((mk.agree || 0) * 100)}% of the time.</p>`
+    : `<p class="muted" style="margin:0">The trainer saves DraftKings’ three-way line before every match. Once ${mk ? `more than ${mk.n}` : 'enough'} of those matches have finished, this compares the model with the market.</p>`;
+  h += `<div class="ins-grid" style="margin-bottom:16px"><div class="panel glass">${panelHead('Calibration', 'are its percentages honest?', IC.st)}${calHtml}</div><div class="panel glass">${panelHead('Model vs the betting market', 'same matches, head to head', IC.$)}${mkHtml}</div></div>`;
+  const R = dayRecord(), months = (E.months || []).filter(m => m.n >= 5).slice(-12).reverse();
+  h += `<div class="ins-grid" style="margin-bottom:16px"><div class="panel glass">${panelHead('Pick of the day record', 'every league you follow · saved in this browser', IC.key)}${R.n ? `<div class="three" style="grid-template-columns:repeat(2,1fr)">${tile('Record', `${R.w}–${R.l}`, `${Math.round(R.w / R.n * 100)}% hit rate`)}${tile(`Last ${R.last.length}`, `<span class="betrec" style="font-size:inherit"><span class="dots">${R.last.map(x => `<i class="${x.result === 'W' ? 'w' : ''}" title="${esc(x.final || '')}"></i>`).join('')}</span></span>`, 'oldest to newest')}</div>` : '<p class="muted" style="margin:0">No graded picks of the day yet.</p>'}</div>
+    <div class="panel glass">${panelHead('By month', esc(lgName(lg)), IC.st)}${months.length ? `<div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Matches</th><th>Right</th><th>Brier</th></tr></thead><tbody>${months.map(m => `<tr><td>${esc(new Date(+m.m.slice(0, 4), +m.m.slice(5, 7) - 1, 15).toLocaleDateString([], { month: 'long', year: 'numeric' }))}</td><td>${m.n}</td><td><b>${pctS(m.acc)}</b></td><td>${m.brier?.toFixed(3) ?? '—'}</td></tr>`).join('')}</tbody></table></div>` : '<div class="muted">No months graded yet.</div>'}</div></div>`;
+  const rec = E.recent || [];
+  if (rec.length) {
+    const shown = state.trkAll ? rec : rec.slice(0, 15), ok = rec.filter(r => r.ok).length;
+    const T = id => names[id] || { id, displayName: 'Team ' + id, abbreviation: '' };
+    const lab = (r, H, A) => r.pred === 'D' ? 'Draw' : tName(r.pred === 'H' ? H : A);
+    const pr = r => r.pred === 'H' ? r.pH : r.pred === 'A' ? r.pA : r.pD;
+    h += `<div class="panel glass">${panelHead('Latest graded predictions', `${ok} of ${rec.length} right`, IC.pl, rec.length > 15 ? `<span class="spacer"></span><button class="pillbtn glass sm" id="trkAll">${state.trkAll ? 'Show fewer' : `Show all ${rec.length}`}</button>` : '')}<div class="fixtures">${shown.map(r => { const H = T(r.h), A = T(r.a); return `<div class="fx" data-ev="${esc(r.id)}" data-lg="${esc(lg)}" style="grid-template-columns:62px 1fr auto"><span class="d">${esc(new Date(r.date).toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span><span class="m">${logoImg(H)}<span>${esc(tName(H))} ${esc(r.hs)}–${esc(r.as)} ${esc(tName(A))}</span>${logoImg(A)}</span><span class="r"><span class="muted" style="font-weight:400">Called ${esc(lab(r, H, A))} · ${Math.round((pr(r) || 0) * 100)}%</span>${r.ok ? '<span class="chip win">✓</span>' : '<span class="chip loss">✗</span>'}</span></div>`; }).join('')}</div></div>`;
+  }
+  h += `<p class="rg">How it’s graded: each night the trainer replays the last two seasons in order. Before each match it predicts home win, draw or away win using only matches already played, then checks the result. Its call is whichever of the three it rated most likely, so draws rarely get called.</p>`;
+  box.innerHTML = h;
+  bindTrkSeg();
+  $$('#modelTrack [data-trk]').forEach(r => r.onclick = () => { state.trkLg = r.dataset.trk; renderTracker(); });
+  $$('#modelTrack .fx[data-ev]').forEach(r => r.onclick = () => openGame(r.dataset.ev, r.dataset.lg));
+  const ta = $('#trkAll'); if (ta) ta.onclick = () => { state.trkAll = !state.trkAll; renderTracker(); };
+}
+function bindTrkSeg() { $$('#trkLg button').forEach(b => b.onclick = () => { state.trkLg = b.dataset.v; state.trkAll = false; renderTracker(); }); }
+
+/* =====================================================================
    My Teams
    ===================================================================== */
 async function loadMine(silent) {
@@ -2595,6 +2698,7 @@ function rerenderAll() {
   if (state.tab === 'standings') renderStandings();
   if (state.tab === 'teams') renderTeams();
   if (state.tab === 'season') renderSeason();
+  if (state.tab === 'model') renderTracker();
   if (state.openId && state.detail) renderDetail();
   if (state.team && state.team.tm) renderTeam();
   paintLgSel();
@@ -2699,7 +2803,7 @@ function schedule() {
   state.nextAt = Date.now() + ms;
   state.timer = setTimeout(tick, ms);
 }
-const VIEWS = ['scores', 'mine', 'odds', 'picks', 'standings', 'teams', 'season', 'news'];
+const VIEWS = ['scores', 'mine', 'odds', 'picks', 'standings', 'teams', 'season', 'model', 'news'];
 function setTab(tab) {
   if (!VIEWS.includes(tab)) tab = 'scores';
   state.tab = tab;
@@ -2714,6 +2818,7 @@ function setTab(tab) {
   else if (tab === 'teams') { if (state.teamsData?.lg === SET.focus) renderTeams(); loadTeams(state.teamsData?.lg === SET.focus).then(schedule); }
   else if (tab === 'season') loadSeason(!!state.stats[SET.focus]).then(schedule);
   else if (tab === 'news') loadNews(!!state.news[SET.focus]).then(schedule);
+  else if (tab === 'model') { renderTracker(); schedule(); }
   else if (tab === 'mine') loadMine(!!state.mine).then(schedule);
   else if (tab === 'picks') { if (!state.events.length) loadScores(true).then(renderPicks); loadPicks().then(schedule); }
   else if (tab === 'odds') { if (state.events.length) renderOdds(); else $('#oddsBoard').innerHTML = '<div class="skeleton" style="height:300px"></div>'; loadScores(true).then(schedule); }
