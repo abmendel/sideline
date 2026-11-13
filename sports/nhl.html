@@ -857,6 +857,7 @@ td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
 .probrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cmpbars{display:flex;flex-direction:column;gap:12px}.cb .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-variant-numeric:tabular-nums}.cb .lbl span:nth-child(2){color:var(--muted);font-size:12px}.cb .lbl b{font-weight:600}.cb .bars{display:flex;gap:4px;height:8px}.cb .bars i{display:block;height:100%;border-radius:6px}.cb .bars i.a{background:var(--away)}.cb .bars i.h{background:var(--home)}.cb .bars div{flex:1;display:flex;background:rgba(var(--fg),.06);border-radius:6px;overflow:hidden}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}#modelTrack .orow{grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 60px!important}@media (max-width:640px){#modelTrack .orow{grid-template-columns:1fr 1fr!important}.three{grid-template-columns:1fr 1fr}}
 .pl2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plrow{margin-bottom:12px}.plrow .probbar{margin-top:6px}.pltop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}.pltop .muted{font-size:11.5px}.plrow.faded{opacity:.6}@media (max-width:700px){.pl2col{grid-template-columns:1fr}}
+.parlay{margin-bottom:16px}.plegs{display:flex;flex-direction:column;gap:6px}.pleg{display:grid;grid-template-columns:24px 30px 1fr 96px 86px;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.pleg:hover{background:rgba(var(--fg),.09)}.pleg img,.pleg .logo-ph{width:28px;height:28px;object-fit:contain}.pleg .pn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--acc);color:var(--acc-ink)}.pleg .pt{min-width:0}.pleg .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pleg .pt span,.pleg .pp span{font-size:11.5px;color:var(--muted)}.pleg .pp{text-align:right}.pleg .pp b{display:block;font-variant-numeric:tabular-nums}.ptot{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}.ptot div{background:rgba(var(--fg),.06);border:1px solid var(--edge-soft);border-radius:14px;padding:10px 12px}.ptot b{display:block;font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.ptot span{font-size:11px;color:var(--dim)}.pfoot{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}.pfoot .muted{flex:1;min-width:240px;font-size:11.5px;line-height:1.45}.seg button[disabled]{opacity:.35;cursor:default}@media (max-width:700px){.ptot{grid-template-columns:repeat(2,minmax(0,1fr))}.pleg{grid-template-columns:22px 26px 1fr 64px}.pleg .pp:last-child{display:none}}
 </style>
 </head>
 <body>
@@ -938,7 +939,7 @@ td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
       <p class="rg">Lines are DraftKings odds as reported through ESPN’s feed (DraftKings is ESPN’s official odds provider). They refresh with the dashboard, can trail the sportsbook by a minute or more, and in-game lines aren’t always published. “Fair win %” is the moneyline’s implied probability with the sportsbook’s margin removed. Make your own picks for fun on the Picks page. 21+ only. If gambling stops being fun, call 1-800-GAMBLER.</p>
     </section>
 
-    <section id="view-picks" class="hidden"><div class="picks-grid" id="picks"></div></section>
+    <section id="view-picks" class="hidden"><div id="parlayBox"></div><div class="picks-grid" id="picks"></div></section>
     <section id="view-matchup" class="hidden"><div id="matchup"></div></section>
     <section id="view-compare" class="hidden"><div id="compare"></div></section>
 
@@ -3146,7 +3147,7 @@ async function computeBestRaw() {
       });
     });
     cands.sort((a, b) => b.p - a.p);
-    state.best = { at: Date.now(), when, top: cands[0] || null, next: cands.filter(c => c.ev.id !== cands[0]?.ev.id).filter((c, i, a) => a.findIndex(x => x.ev.id === c.ev.id) === i).slice(0, 3), ok: true };
+    state.best = { at: Date.now(), when, cands, top: cands[0] || null, next: cands.filter(c => c.ev.id !== cands[0]?.ev.id).filter((c, i, a) => a.findIndex(x => x.ev.id === c.ev.id) === i).slice(0, 3), ok: true };
     state.bestLoading = null;
     return state.best;
   })().catch(e => { state.bestLoading = null; state.best = { at: Date.now(), ok: false, err: e }; return state.best; });
@@ -3311,6 +3312,7 @@ async function openPicker(mode, slotIdx) {
    Settings
    ===================================================================== */
 function rerenderAll() {
+  if (state.tab === 'picks') renderParlay();
   if (state.tab === 'model') renderTracker();
   if (state.events.length) renderScores();
   if (state.tab === 'odds') renderOdds();
@@ -3447,7 +3449,7 @@ async function tick() {
   clearTimeout(state.timer);
   if (state.tab === 'scores' || state.tab === 'odds') await loadScores(true);
   else if (state.tab === 'mine') await loadMine(true);
-  else if (state.tab === 'picks') await loadPicks();
+  else if (state.tab === 'picks') { await loadPicks(); renderParlay(); }
   else if (state.tab === 'standings') await loadStandings(true);
   else if (state.tab === 'news') await loadNews(true);
   else if (state.tab === 'season') await loadSeason(true);
@@ -3478,7 +3480,7 @@ function setTab(tab) {
   else   if (tab === 'standings') { if (state.standings) renderStandings(); loadStandings(!!state.standings).then(schedule); }
   else if (tab === 'news') loadNews(!!state.news).then(schedule);
   else if (tab === 'mine') loadMine(true).then(schedule);
-  else if (tab === 'picks') loadPicks().then(schedule);
+  else if (tab === 'picks') { renderParlay(); loadPicks().then(schedule); }
   else if (tab === 'compare') { renderCompare(); schedule(); }
   else if (tab === 'matchup') { renderMatchup(); schedule(); }
   else if (tab === 'season') { if (SS.rows.length || SS.teams) { renderSeason(); schedule(); } else loadSeason(true).then(schedule); }
@@ -3672,6 +3674,48 @@ function predLiveSection(d, home, away, st, ev) {
   return `<div class="section panel glass">${panelHead(st === 'pre' ? 'Prediction & odds' : st === 'in' ? 'Pre-game vs live' : 'Pre-game prediction & odds', st === 'in' ? 'live line refreshes with the game' : st === 'pre' ? 'win chances with the sportsbook margin removed' : 'how the numbers looked before the start', IC.wp)}
     <div class="${live ? 'pl2col' : ''}"><div><div class="sublabel" style="margin-top:0">Pre-game</div>${pre || '<div class="muted">No pre-game numbers.</div>'}</div>${live ? `<div><div class="sublabel" style="margin-top:0">${st === 'in' ? 'Live now' : 'Result'}</div>${live}</div>` : ''}</div></div>`;
 }
+
+
+/* =====================================================================
+   Suggested parlay (Picks tab) — the legs the model rates most likely,
+   one per game, priced with DraftKings' moneylines
+   ===================================================================== */
+const decOdds = ml => ml == null ? null : ml > 0 ? 1 + ml / 100 : 1 + 100 / -ml;
+const amFromDec = d => d == null ? null : d >= 2 ? Math.round((d - 1) * 100) : -Math.round(100 / (d - 1));
+async function renderParlay() {
+  const box = $('#parlayBox'); if (!box) return;
+  if (!state.best || !state.best.cands || Date.now() - state.best.at > 60000) {
+    if (!state.best?.cands) box.innerHTML = '<div class="skeleton" style="height:180px;margin-bottom:16px"></div>';
+    await computeBest(); if (state.tab !== 'picks') return;
+  }
+  const n = state.parlayN || 3, B = state.best;
+  const uniq = [];
+  (B.cands || []).filter(c => c.ml != null && statusOf(c.ev).state === 'pre').sort((a, b) => b.p - a.p).forEach(c => { if (!uniq.some(u => u.ev.id === c.ev.id)) uniq.push(c); });
+  const legs = uniq.slice(0, n);
+  const seg = `<div class="seg" id="parN">${[2, 3, 4].map(k => `<button data-n="${k}" class="${k === n ? 'on' : ''}" ${uniq.length < k ? 'disabled' : ''}>${k} legs</button>`).join('')}</div>`;
+  const head = `<div class="ph"><span class="pic">🎟️</span><h3>Suggested parlay</h3><span class="sub">${esc(B.when === 'tomorrow' ? 'tomorrow’s' : 'today’s')} ${SPORTX.unit === 'week' ? 'slate' : 'games'} · the ${n} picks our model likes most</span><span class="spacer"></span>${seg}</div>`;
+  if (legs.length < 2) { box.innerHTML = `<div class="panel glass parlay">${head}<p class="muted" style="margin:0">Not enough upcoming games with DraftKings lines to build a parlay right now. Check back closer to game time.</p></div>`; bindParlay(); return; }
+  const dec = legs.reduce((s, c) => s * decOdds(c.ml), 1), am = amFromDec(dec);
+  const pModel = legs.reduce((s, c) => s * c.p, 1), pBook = 1 / dec;
+  const pFair = legs.every(c => c.market != null) ? legs.reduce((s, c) => s * c.market, 1) : null;
+  const ev = pModel * dec - 1;
+  const tracked = legs.every(c => String(PICKS[c.ev.id]?.pick) === String(c.team?.id));
+  box.innerHTML = `<div class="panel glass parlay">${head}
+    <div class="plegs">${legs.map((c, i) => `<div class="pleg" data-ev="${esc(c.ev.id)}"><span class="pn">${i + 1}</span>${logoImg(c.team)}<div class="pt"><b>${esc(c.team?.shortDisplayName || c.team?.displayName || c.team?.abbreviation)} to win</b><span>${c.side === 'home' ? 'vs' : '@'} ${esc(c.opp?.abbreviation || '')} · ${esc(startTime(c.ev))}</span></div><div class="pp"><b>${Math.round(c.p * 100)}%</b><span>model + market</span></div><div class="pp"><b>${esc(fmtAm(c.ml))}</b><span>DraftKings</span></div></div>`).join('')}</div>
+    <div class="ptot">
+      <div><b>${esc(fmtAm(am))}</b><span>Parlay odds</span></div>
+      <div><b>$${(10 * dec).toFixed(2)}</b><span>$10 pays</span></div>
+      <div><b>${Math.round(pModel * 100)}%</b><span>Chance all ${legs.length} hit (our numbers)</span></div>
+      <div><b>${Math.round(pBook * 100)}%</b><span>Chance the odds imply</span></div>
+      <div><b class="${ev >= 0 ? 'pos' : 'neg'}">${ev >= 0 ? '+' : ''}${(ev * 100).toFixed(0)}%</b><span>Expected return per $1</span></div>
+    </div>
+    <div class="pfoot"><button class="pillbtn ${tracked ? 'glass' : 'accbtn'} sm" id="parTrack" ${tracked ? 'disabled' : ''}>${tracked ? '✓ All legs in your picks' : 'Add these to my picks'}</button>
+      <span class="muted">Each leg is the side with the highest win chance from our model blended with DraftKings (margin removed). The combined chance multiplies the legs as if they were independent${pFair != null ? `; DraftKings’ own fair chance is ${Math.round(pFair * 100)}% before its margin` : ''}. More legs pay more but miss more often. For fun only · 21+ · 1-800-GAMBLER</span></div></div>`;
+  bindParlay();
+  $$('#parlayBox .pleg').forEach(r => r.onclick = () => openGame(r.dataset.ev));
+  const tb = $('#parTrack'); if (tb) tb.onclick = () => { legs.forEach(c => { if (String(PICKS[c.ev.id]?.pick) !== String(c.team?.id)) makePick(c.ev, c.team?.id); }); renderParlay(); if (typeof renderPicks === 'function') renderPicks(); updateCounts(); };
+}
+function bindParlay() { $$('#parN button').forEach(b => b.onclick = () => { if (b.disabled) return; state.parlayN = +b.dataset.n; renderParlay(); }); }
 
 /* =====================================================================
    Start
