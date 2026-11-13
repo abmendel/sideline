@@ -66,18 +66,27 @@ function oddsOf(ev) {
   return pH != null && pA != null ? { fairH: pH / (pH + pA), mlH, mlA } : null;
 }
 const calDates = cal => (cal || []).flatMap(x => typeof x === 'string' ? [x] : x?.startDate ? [x.startDate] : x?.value && /^\d{4}-/.test(x.value) ? [x.value] : []).map(dayOf);
+// Some leagues (MLB) send a blacklist: the calendar lists the days WITHOUT games between calendarStartDate and calendarEndDate.
+function leagueDays(lg) {
+  const listed = calDates(lg?.calendar);
+  if (lg?.calendarIsWhitelist !== false || !lg?.calendarStartDate || !lg?.calendarEndDate) return listed;
+  const off = new Set(listed), out = [];
+  const d = new Date(lg.calendarStartDate.slice(0, 10) + 'T12:00:00Z'), end = new Date(lg.calendarEndDate.slice(0, 10) + 'T12:00:00Z');
+  for (; d <= end; d.setUTCDate(d.getUTCDate() + 1)) { const k = ymd(d); if (!off.has(k)) out.push(k); }
+  return out;
+}
 
 async function collect(sp, S, store, log) {
   const base = API(S.path), today = ymd(new Date()), units = [];
   if (S.mode === 'day') {
     const cur = await fetchJSON(`${base}/scoreboard?limit=200`);
-    const curCal = calDates(cur?.leagues?.[0]?.calendar);
+    const curCal = leagueDays(cur?.leagues?.[0]);
     let prevCal = [];
     if (curCal.length) {
       const d = new Date(Date.UTC(+curCal[0].slice(0, 4), +curCal[0].slice(4, 6) - 1, +curCal[0].slice(6, 8)));
       d.setUTCDate(d.getUTCDate() - 270);
       const prev = await fetchJSON(`${base}/scoreboard?dates=${ymd(d)}&limit=200`);
-      prevCal = calDates(prev?.leagues?.[0]?.calendar).filter(x => x < curCal[0]);
+      prevCal = leagueDays(prev?.leagues?.[0]).filter(x => x < curCal[0]);
     }
     const tmw = new Date(); tmw.setUTCDate(tmw.getUTCDate() + 1);
     [...new Set([...prevCal, ...curCal])].filter(x => x <= ymd(tmw)).forEach(d => units.push({ key: d, url: `${base}/scoreboard?dates=${d}&limit=200`, day: d }));
