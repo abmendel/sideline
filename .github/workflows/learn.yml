@@ -1,0 +1,85 @@
+name: Retrain prediction models
+
+on:
+  schedule:
+    - cron: '30 14 * * *'   # morning: last night's results + today's opening odds
+    - cron: '30 22 * * *'   # late afternoon: odds closer to game time
+  workflow_dispatch:
+    inputs:
+      test_alert:
+        description: 'Pretend training failed, to test the alert'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: learn
+  cancel-in-progress: false
+
+env:
+  ALERT_TITLE: 'Model training failed'
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Train every sport; one sport failing doesn't stop the others from being saved
+      - name: Train
+        id: train
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          node learn/learn.mjs 2>&1 | tee train.log
+          if [ "${{ inputs.test_alert }}" = "true" ]; then echo "Test alert requested (training itself was fine)" | tee -a train.log; exit 1; fi
+
+      - name: Commit updated models
+        if: always()
+        run: |
+          git config user.name "sideline-bot"
+          git config user.email "sideline-bot@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Retrain models $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase origin main
+          git push
+
+      # On failure: open one alert issue (GitHub emails the repo owner), or comment on the open one
+      - name: Alert on failure
+        if: steps.train.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo "The prediction model training run failed: $RUN_URL"
+            echo
+            echo "The site keeps using the last good model until a run succeeds. Last lines of the log:"
+            echo
+            echo '```'
+            tail -n 40 train.log || true
+            echo '```'
+          } > body.md
+          num=$(gh issue list --state open --search "\"$ALERT_TITLE\" in:title" --json number --jq '.[0].number')
+          if [ -n "$num" ]; then gh issue comment "$num" --body-file body.md
+          else gh issue create --title "$ALERT_TITLE" --body-file body.md; fi
+          exit 1
+
+      # On success: close any open alert
+      - name: Close alert after a good run
+        if: steps.train.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          for num in $(gh issue list --state open --search "\"$ALERT_TITLE\" in:title" --json number --jq '.[].number'); do
+            gh issue close "$num" --comment "Training is working again: $RUN_URL"
+          done
