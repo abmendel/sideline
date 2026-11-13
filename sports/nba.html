@@ -253,6 +253,18 @@ tr.myteam td{background:rgba(var(--acc-rgb),.1)}
 .kst{float:right;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;margin-left:8px}
 .kst.ok{background:rgba(40,170,90,.16);color:var(--good)}
 .kst.no{background:rgba(225,60,60,.13);color:var(--bad)}
+.learnbox{display:flex;flex-direction:column;gap:4px;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:rgba(var(--fg),.045);font-size:12.5px;color:var(--muted);line-height:1.45}
+.learnbox b{color:var(--text)}
+.mc-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.mc-tiles>div{padding:10px 12px;border-radius:14px;background:rgba(var(--fg),.045)}
+.mc-tiles b{display:block;font-size:20px;font-weight:600;color:var(--text)}
+.mc-tiles span{font-size:11.5px;color:var(--muted)}
+.mc-bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:6px}
+.mc-bars>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;min-width:0}
+.mc-bars i{width:100%;max-width:38px;border-radius:8px 8px 4px 4px;background:var(--grad);display:block}
+.mc-bars em{font-style:normal;font-size:11px;color:var(--muted)}
+.mc-bars small{font-size:10.5px;color:var(--dim)}
+
 .ins-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-bottom:16px}
 .ins-card{padding:14px 16px!important}
 .ins-card .t{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
@@ -1062,6 +1074,7 @@ const saveFav = () => { store.set(FKEY, FAV); updateCounts(); updateHello(); };
 const savePicks = () => { store.set(PKEY, PICKS); updateCounts(); };
 const saveCmp = () => store.set(CKEY, CMP);
 const SPORTX = {
+  id: 'nba', move: { sp: 1.5, tot: 3 },
   unit: 'day',
   label: k => { if (!k) return ''; const d = new Date(+k.slice(0, 4), +k.slice(4, 6) - 1, +k.slice(6, 8), 12); return (sameDay(d, new Date()) ? 'Today, ' : '') + d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }); },
   cmp: (a, b) => a < b ? -1 : a > b ? 1 : 0,
@@ -1190,7 +1203,7 @@ function renderBetBox(sel, wide) {
     const all = Object.values(DAYPICKS).sort((a, b2) => new Date(b2.date) - new Date(a.date)).slice(0, 10);
     return all.length ? `<div class="sublabel">Recent picks (saved in this browser)</div><div class="dphist">${all.map(dp => `<button class="dprow" data-ev="${esc(dp.evId)}"><span class="d">${esc(dp.label)}</span>${logoImg(dp.team)}<span><b>${esc(dp.team?.abbreviation)}</b> ${dp.side === 'home' ? 'vs' : '@'} ${esc(dp.opp?.abbreviation || '')}</span><span class="p">${pct(dp.p)}</span>${dpChip(dp, new Date(dp.date) <= new Date())}</button>`).join('')}</div>` : '';
   })() : '';
-  const fine = `<div class="betfine">Each ${SPORTX.unit}’s pick is the single outcome with the highest estimated chance: the average of the matchup model and DraftKings’ moneyline with the margin removed. It locks when its game starts and is saved in this browser, so you can look back at any ${SPORTX.unit} you had the dashboard open. For entertainment only · 21+ · 1-800-GAMBLER</div>`;
+  const fine = `<div class="betfine">Each ${SPORTX.unit}’s pick is the single outcome with the highest estimated chance, combining the learning model with DraftKings’ moneyline (margin removed)${LEARN.model?.blend ? `, weighted by what ${LEARN.model.blend.n} past games showed works best` : ', half and half until enough results are in to learn a better mix'}. It locks when its game starts and is saved in this browser, so you can look back at any ${SPORTX.unit} you had the dashboard open. For entertainment only · 21+ · 1-800-GAMBLER</div>`;
   let main, nums = '', alt = '', target = null;
   if (live) {
     const c = b.top, pay = payout(c.ml); target = { mu: c.ev.id };
@@ -1212,6 +1225,97 @@ function renderBetBox(sel, wide) {
     const g = e.target.closest('[data-g]'); if (g) { openMatchupFor(g.dataset.g); return; }
     if (target?.mu) openMatchupFor(target.mu); else if (target?.game) openGame(target.game);
   };
+}
+
+/* =====================================================================
+   Learning model — trained nightly on every result (learn/learn.mjs)
+   and published as data/model-<sport>.json
+   ===================================================================== */
+const LEARN = { model: null, loading: null, at: 0 };
+function loadLearned() {
+  if (LEARN.at && Date.now() - LEARN.at < 36e5) return Promise.resolve(LEARN.model);
+  if (LEARN.loading) return LEARN.loading;
+  LEARN.loading = fetch(`../data/model-${SPORTX.id}.json`, { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null)
+    .then(m => { LEARN.loading = null; LEARN.at = Date.now(); if (m && Array.isArray(m.w) && m.teams) LEARN.model = m; return LEARN.model; });
+  return LEARN.loading;
+}
+function loadModelBase() { return Promise.all([loadModelBaseRaw(), loadLearned()]).then(([b]) => b); }
+function learnedParts(homeId, awayId, date, neutral) {
+  const M = LEARN.model; if (!M || M.games < 50) return null;
+  const H = M.teams[String(homeId)], A = M.teams[String(awayId)]; if (!H || !A) return null;
+  const when = date ? new Date(date) : new Date();
+  const tf = t => ({ elo: t.elo, mShr: t.msum / (t.gp + 4), l10: t.last?.length ? t.last.reduce((s, v) => s + v, 0) / t.last.length : 0,
+    rest: M.rest ? (t.lastDate ? Math.min(3, Math.max(0, Math.floor((when - new Date(t.lastDate)) / 864e5) - 1)) : 3) : 0 });
+  const h = tf(H), a = tf(A), x = [neutral ? 0 : 1, (h.elo - a.elo) / 100, h.mShr - a.mShr, h.l10 - a.l10, h.rest - a.rest];
+  const t = x.map((v, i) => v * (M.w[i] || 0));
+  return { home: t[0], rating: t[1] + t[2], form: t[3], rest: t[4], sigma: M.sigma, n: M.games };
+}
+function applyLearned(pr, awayId, homeId, opt = {}) {
+  if (!pr || !pr.factors) return pr;
+  const L = learnedParts(homeId, awayId, opt.date, !!opt.neutral); if (!L) return pr;
+  const homeK = pr.factors.find(f => /^Home/.test(f.k))?.k || 'Home';
+  const keep = pr.factors.filter(f => !/^(Ratings matchup|Home|Recent form|Rest)/.test(f.k));
+  const factors = [
+    { k: 'Learned ratings', v: L.rating, note: `Elo and scoring margin, learned from ${L.n.toLocaleString()} games` },
+    { k: homeK, v: opt.neutral ? 0 : L.home, note: opt.neutral ? 'neutral site' : `${pr.H.abbr} at home · learned edge` },
+    { k: 'Recent form', v: L.form, note: 'last 10 games · learned weight' },
+    ...(LEARN.model.rest ? [{ k: 'Rest', v: L.rest, note: 'days off before the game · learned weight' }] : []),
+    ...keep
+  ];
+  const margin = factors.reduce((s, f) => s + f.v, 0), pH = Phi(margin / (L.sigma || 1));
+  return { ...pr, factors, margin, pH, pA: 1 - pH, ptsH: pr.total / 2 + margin / 2, ptsA: pr.total / 2 - margin / 2, learned: true };
+}
+function predict(base, awayId, homeId, opt = {}) { return applyLearned(predictRaw(base, awayId, homeId, opt), awayId, homeId, opt); }
+const lgt = p => { p = Math.min(.99, Math.max(.01, p)); return Math.log(p / (1 - p)); };
+function blendProb(pm, pmk) {
+  if (pmk == null) return pm;
+  const B = LEARN.model?.blend;
+  return B ? 1 / (1 + Math.exp(-(B.a + B.wModel * lgt(pm) + B.wMarket * lgt(pmk)))) : (pm + pmk) / 2;
+}
+const pctS = v => v == null || isNaN(v) ? '—' : (v * 100).toFixed(1) + '%';
+function learnedNote() {
+  const M = LEARN.model;
+  if (!M) return `<div class="learnbox"><b>🧠 Learning model</b><span>Not published yet. Until its first nightly run, predictions use this season’s stats only.</span></div>`;
+  const E = M.eval || {}, s = E.season?.n >= 30 ? E.season : E.all || {};
+  return `<div class="learnbox"><b>🧠 Learning model</b><span>Learned from ${M.games.toLocaleString()} games and retrained every night. It replaces the ratings, home edge, form${M.rest ? ' and rest' : ''} above with weights fit to real results; injuries${/mlb|nhl/.test(SPORTX.id) ? ' and starters' : ''} still adjust on top.</span>
+    <span>Picks the winner <b>${pctS(s.acc)}</b> of the time${E.season?.n >= 30 ? ' this season' : ''} on games it hadn’t seen yet (home team every time: ${pctS(s.homeAcc)})${E.last30?.n >= 20 ? ` · last 30 days ${pctS(E.last30.acc)}` : ''}.</span>
+    <span class="sub">Updated ${esc(new Date(M.updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span></div>`;
+}
+function modelCard() {
+  const M = LEARN.model; if (!M) return '';
+  const E = M.eval || {}, months = (E.months || []).filter(m => m.n >= 10).slice(-12), w = M.w || [];
+  const lo = .4, hi = .8, h = v => Math.max(4, Math.min(100, (v - lo) / (hi - lo) * 100));
+  const base = E.all?.homeAcc;
+  const U = INS.unit, d = INS.d;
+  const learned = [`home edge ${fxd(w[0], d)} ${U}`, `100 Elo points ${fxd(w[1], d)} ${U}`, `1 ${U.replace(/s$/, '')} of season margin per game ${fxd(w[2], 2)}`, `1 ${U.replace(/s$/, '')} of last-10 margin ${fxd(w[3], 2)}`, ...(M.rest ? [`1 extra day of rest ${fxd(w[4], d)} ${U}`] : [])];
+  return `<div class="panel glass" style="margin-bottom:16px">${panelHead('Prediction model report card', 'every game predicted before it was played, then graded · retrained nightly', IC.wp)}
+    <div class="mc-tiles"><div><b>${M.games.toLocaleString()}</b><span>Games learned from</span></div><div><b>${pctS(E.season?.acc ?? E.all?.acc)}</b><span>Right${E.season?.n ? ' this season' : ''}</span></div>
+      <div><b>${pctS(E.last30?.acc)}</b><span>Last 30 days</span></div><div><b>${E.all?.brier != null ? E.all.brier.toFixed(3) : '—'}</b><span>Brier score (lower is better)</span></div>
+      <div><b>${pctS(base)}</b><span>Home team every time</span></div>${M.blend ? `<div><b>${pctS(M.blend.accBlend)}</b><span>Model + market mix (${M.blend.n} games)</span></div>` : ''}</div>
+    ${months.length ? `<div class="sublabel">Accuracy by month</div><div class="mc-bars">${months.map(m => `<div title="${m.n} games · Brier ${m.brier}"><em>${Math.round(m.acc * 100)}%</em><i style="height:${h(m.acc)}%"></i><small>${esc(new Date(+m.m.slice(0, 4), +m.m.slice(5, 7) - 1, 15).toLocaleDateString([], { month: 'short' }))}</small></div>`).join('')}</div>` : ''}
+    <p class="note" style="margin-top:10px">What it has learned each factor is worth: ${learned.map(esc).join(' · ')}. It uses ${(M.seasons || []).length} season${(M.seasons || []).length === 1 ? '' : 's'} of results, refits its weights every night and gets sharper as games pile up.${M.blend ? ` It has also learned how much to trust the betting market: ${M.blend.wMarket > M.blend.wModel ? 'the market has earned more weight so far' : 'its own ratings have earned more weight so far'}.` : ''}</p></div>`;
+}
+
+/* ---------- featured game: the one the betting market is moving most ---------- */
+function actionOf(ev) {
+  const o = oddsForEvent(ev); if (!o) return null;
+  const M = SPORTX.move, parts = []; let s = 0;
+  const { home } = compOf(ev), hab = home.team?.abbreviation || 'Home';
+  if (o.mlH != null && o.mlA != null && o.mlHo != null && o.mlAo != null) {
+    const fair = (h, a) => { const ph = implied(h), pa = implied(a); return ph / (ph + pa); };
+    const dlt = Math.abs(fair(o.mlH, o.mlA) - fair(o.mlHo, o.mlAo));
+    if (dlt >= .005) { s += dlt / .02; parts.push(`${hab} moneyline ${fmtAm(o.mlHo)} → ${fmtAm(o.mlH)}`); }
+  }
+  if (M.sp && o.spH != null && o.spHo != null && o.spH !== o.spHo) { s += Math.abs(o.spH - o.spHo) / M.sp; parts.push(`spread ${fmtSp(o.spHo)} → ${fmtSp(o.spH)}`); }
+  if (o.tot != null && o.totO != null && o.tot !== o.totO) { s += Math.abs(o.tot - o.totO) / M.tot; parts.push(`total ${o.totO} → ${o.tot}`); }
+  const tv = broadcastOf(ev.competitions?.[0] || {});
+  if (/\b(ESPN|ABC|TNT|TBS|NBC|CBS|FOX|Prime|Peacock|Netflix|NFL Net|MLB Net|NHL Net)\b(?!\+)/i.test(tv)) s += .35;
+  return { s, parts };
+}
+function mostAction(evs) {
+  let best = null;
+  evs.filter(e => statusOf(e).state !== 'post').forEach(ev => { const a = actionOf(ev); if (a && a.parts.length && (!best || a.s > best.a.s)) best = { ev, a }; });
+  return best ? { ev: best.ev, why: `Most betting action · ${best.a.parts.slice(0, 2).join(' · ')}` } : null;
 }
 
 /* =====================================================================
@@ -1374,7 +1478,7 @@ async function renderInsights() {
         <p class="note" style="margin-top:8px">Expected win % uses the Pythagorean formula (${esc(U)} for<sup>${INS.pyExp}</sup> ÷ (for<sup>${INS.pyExp}</sup> + against<sup>${INS.pyExp}</sup>)). Teams far above it have usually been winning close games, which tends not to last.</p></div></div>
     <div class="panel glass" style="margin-bottom:16px">${panelHead('Advanced team stats', `${esc(INS.colNote)} · green = top 5, red = bottom 5 · click a column to sort`, IC.st)}
       <div class="tbl-wrap"><table class="stbl teams"><thead><tr><th>#</th><th style="text-align:left">Team</th>${cols.map(c => `<th class="sortable ${c.k === sc.k ? 'sorted' : ''}" data-ik="${esc(c.k)}" title="${esc(c.tip || '')}">${esc(c.k)}${c.k === sc.k ? (INSD.dir < 0 ? ' ▾' : ' ▴') : ''}</th>`).join('')}</tr></thead><tbody>${adv}</tbody></table></div></div>
-    <div class="sublabel" style="margin:4px 0 10px">Advanced player leaders</div><div class="ins-boards">${boards}</div>`;
+    ${modelCard()}<div class="sublabel" style="margin:4px 0 10px">Advanced player leaders</div><div class="ins-boards">${boards}</div>`;
   $$('#seasonBody [data-ik]').forEach(th => th.onclick = () => { if (INSD.sort === th.dataset.ik || (!INSD.sort && th.dataset.ik === cols[0].k)) INSD.dir *= -1; else { INSD.sort = th.dataset.ik; INSD.dir = -1; } renderInsights(); });
 }
 const isFavTeam = id => id != null && FAV.teamId != null && String(id) === FAV.teamId;
@@ -1634,6 +1738,7 @@ async function loadScores(silent) {
   }
 }
 function pickSpotlight(evs) {
+  const act = mostAction(evs); if (act) return act;
   const mine = evs.find(isMyGame);
   if (mine) return { ev: mine, why: 'Your team' };
   const margin = ev => { const { home, away } = compOf(ev); return Math.abs((num(home.score) || 0) - (num(away.score) || 0)); };
@@ -2602,7 +2707,7 @@ const HOME_EDGE = 2.4, GAME_SD = 12.5, REPLACEMENT = 0.25;   // a missing scorer
 const erf = x => { const t = 1 / (1 + .3275911 * Math.abs(x)); const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; };
 const Phi = z => .5 * (1 + erf(z / Math.SQRT2));
 const STATUS_W = s => /out|suspen/i.test(s) ? 1 : /doubt/i.test(s) ? .75 : /question/i.test(s) ? .45 : /day/i.test(s) ? .35 : /probable/i.test(s) ? .1 : .5;
-function loadModelBase() {
+function loadModelBaseRaw() {
   if (MODEL.base && Date.now() - MODEL.base.at < 6e5) return Promise.resolve(MODEL.base);
   if (MODEL.loading) return MODEL.loading;
   MODEL.loading = (async () => {
@@ -2666,7 +2771,7 @@ async function teamForm(id) {
   MODEL.sched[id] = f;
   return f;
 }
-function predict(base, awayId, homeId, opt = {}) {
+function predictRaw(base, awayId, homeId, opt = {}) {
   const A = base.teams[String(awayId)], H = base.teams[String(homeId)];
   if (!A || !H) return null;
   const lg = base.lg, neutral = !!opt.neutral, fa = opt.formA, fh = opt.formH, when = opt.date || new Date();
@@ -2711,7 +2816,7 @@ async function computeBestRaw() {
       if (!pr) return;
       const o = oddsForEvent(ev);
       [['home', home, pr.pH, o?.fairH, o?.mlH], ['away', away, pr.pA, o?.fairA, o?.mlA]].forEach(([side, t, pm, pmk, ml]) => {
-        const blend = pmk != null ? (pm + pmk) / 2 : pm;
+        const blend = blendProb(pm, pmk);
         cands.push({ ev, side, team: t.team, opp: (side === 'home' ? away : home).team, model: pm, market: pmk ?? null, p: blend, ml: ml ?? null, pr });
       });
     });
@@ -2804,7 +2909,7 @@ async function renderMatchup() {
       <div class="mumid"><div class="sub" style="margin-bottom:6px">Projected score</div><div class="muscore">${Math.round(pr.ptsA)}<span class="sep">–</span>${Math.round(pr.ptsH)}</div>
         <div class="mulines"><span>Model: <b>${esc(spread)}</b></span><span>Total ${pr.total.toFixed(1)}</span></div>${market}</div>
       <div class="muteam">${logoImg(tH)}<b>${esc(tH.displayName || H.name)}</b><span class="sub">${MU.neutral ? 'Neutral' : 'Home'} · ${esc(fh?.last10 || '')} last 10</span>${ring(pr.pH, { size: 78, stroke: 8, value: pct(pr.pH), label: 'win' })}</div></div></div>
-    <div class="mugrid"><div class="panel glass">${panelHead('What drives the prediction', 'points toward each team', IC.wp)}${factors}
+    <div class="mugrid"><div class="panel glass">${panelHead('What drives the prediction', 'points toward each team', IC.wp)}${factors}${learnedNote()}
         <div class="betfine" style="margin-top:12px">How it works: each team’s offensive and defensive rating (points per 100 possessions, from this season’s ESPN stats) meet at the expected pace, then home court (+${HOME_EDGE}), injuries (about a quarter of each listed player’s scoring, scaled by how likely he is to sit; capped at 10 points per team), recent form and back-to-backs adjust the margin. Win chance assumes a typical NBA game swings about ±${GAME_SD} points. It’s a simple, transparent model — not a guarantee.</div></div>
       <div class="panel glass">${panelHead('Team ratings', `<span style="color:var(--away)">●</span> ${esc(A.abbr)} &nbsp; <span style="color:var(--acc-text)">●</span> ${esc(H.abbr)}`, IC.st)}${rows}</div></div>
     <div class="panel glass" style="margin-top:16px">${panelHead('Injury report', 'from ESPN · factored into the prediction', IC.bx)}<div class="mugrid" style="margin-top:0">${injCol(A, base.injuries[A.id], pr.injA)}${injCol(H, base.injuries[H.id], pr.injH)}</div></div>`;

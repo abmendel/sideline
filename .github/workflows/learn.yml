@@ -1,0 +1,35 @@
+name: Retrain prediction models
+
+on:
+  schedule:
+    - cron: '30 14 * * *'   # morning: last night's results + today's opening odds
+    - cron: '30 22 * * *'   # late afternoon: odds closer to game time
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: learn
+  cancel-in-progress: false
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Train
+        run: node learn/learn.mjs
+      - name: Commit updated models
+        run: |
+          git config user.name "sideline-bot"
+          git config user.email "sideline-bot@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
+          git commit -m "Retrain models $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase origin main
+          git push

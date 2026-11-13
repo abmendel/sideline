@@ -9,3 +9,10 @@ Data comes from ESPN's public feeds, loaded in the browser.
 To add a sport: add its page under `sports/` and one line to the `SPORTS` list in `index.html`.
 
 Deployed on Netlify from this repository (no build step; publish directory is the repo root).
+
+## Learning model
+
+`learn/learn.mjs` runs twice a day on GitHub Actions (`.github/workflows/learn.yml`). It stores every game result
+(two seasons) and pre-game odds snapshot in `data/<sport>-games.json`, rebuilds Elo ratings, refits the prediction
+weights, grades itself on games it hadn't seen yet, and writes `data/model-<sport>.json`, which the dashboards load.
+Run it by hand from the Actions tab ("Retrain prediction models" → Run workflow) or locally with `node learn/learn.mjs`.
