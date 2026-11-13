@@ -255,6 +255,7 @@ tr.myteam td{background:rgba(var(--acc-rgb),.1)}
 .kst.no{background:rgba(225,60,60,.13);color:var(--bad)}
 .learnbox{display:flex;flex-direction:column;gap:4px;margin:12px 0 4px;padding:12px 14px;border-radius:14px;background:rgba(var(--fg),.045);font-size:12.5px;color:var(--muted);line-height:1.45}
 .learnbox b{color:var(--text)}
+.stalewarn{margin:10px 0 4px;padding:10px 12px;border-radius:12px;background:rgba(240,160,40,.14);color:var(--text);font-size:12.5px;line-height:1.45}
 .mc-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .mc-tiles>div{padding:10px 12px;border-radius:14px;background:rgba(var(--fg),.045)}
 .mc-tiles b{display:block;font-size:20px;font-weight:600;color:var(--text)}
@@ -1338,12 +1339,14 @@ function blendProb(pm, pmk) {
   const B = LEARN.model?.blend;
   return B ? 1 / (1 + Math.exp(-(B.a + B.wModel * lgt(pm) + B.wMarket * lgt(pmk)))) : (pm + pmk) / 2;
 }
+const learnAge = () => LEARN.model?.updated ? (Date.now() - new Date(LEARN.model.updated)) / 36e5 : null;
+const staleNote = () => { const h = learnAge(); return h != null && h > 36 ? `<div class="stalewarn">⚠️ The learning model hasn’t retrained in ${h < 72 ? Math.round(h) + ' hours' : Math.round(h / 24) + ' days'}. Predictions still work using its last update — check the “Retrain prediction models” job in the GitHub Actions tab.</div>` : ''; };
 const pctS = v => v == null || isNaN(v) ? '—' : (v * 100).toFixed(1) + '%';
 function learnedNote() {
   const M = LEARN.model;
   if (!M) return `<div class="learnbox"><b>🧠 Learning model</b><span>Not published yet. Until its first nightly run, predictions use this season’s stats only.</span></div>`;
   const E = M.eval || {}, s = E.season?.n >= 30 ? E.season : E.all || {};
-  return `<div class="learnbox"><b>🧠 Learning model</b><span>Learned from ${M.games.toLocaleString()} games and retrained every night. It replaces the ratings, home edge, form${M.rest ? ' and rest' : ''} above with weights fit to real results; injuries${/mlb|nhl/.test(SPORTX.id) ? ' and starters' : ''} still adjust on top.</span>
+  return `${staleNote()}<div class="learnbox"><b>🧠 Learning model</b><span>Learned from ${M.games.toLocaleString()} games and retrained every night. It replaces the ratings, home edge, form${M.rest ? ' and rest' : ''} above with weights fit to real results; injuries${/mlb|nhl/.test(SPORTX.id) ? ' and starters' : ''} still adjust on top.</span>
     <span>Picks the winner <b>${pctS(s.acc)}</b> of the time${E.season?.n >= 30 ? ' this season' : ''} on games it hadn’t seen yet (home team every time: ${pctS(s.homeAcc)})${E.last30?.n >= 20 ? ` · last 30 days ${pctS(E.last30.acc)}` : ''}.</span>
     <span class="sub">Updated ${esc(new Date(M.updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span></div>`;
 }
@@ -1354,7 +1357,7 @@ function modelCard() {
   const base = E.all?.homeAcc;
   const U = INS.unit, d = INS.d;
   const learned = [`home edge ${fxd(w[0], d)} ${U}`, `100 Elo points ${fxd(w[1], d)} ${U}`, `1 ${U.replace(/s$/, '')} of season margin per game ${fxd(w[2], 2)}`, `1 ${U.replace(/s$/, '')} of last-10 margin ${fxd(w[3], 2)}`, ...(M.rest ? [`1 extra day of rest ${fxd(w[4], d)} ${U}`] : [])];
-  return `<div class="panel glass" style="margin-bottom:16px">${panelHead('Prediction model report card', 'every game predicted before it was played, then graded · retrained nightly', IC.wp)}
+  return `<div class="panel glass" style="margin-bottom:16px">${panelHead('Prediction model report card', 'every game predicted before it was played, then graded · retrained nightly', IC.wp)}${staleNote()}
     <div class="mc-tiles"><div><b>${M.games.toLocaleString()}</b><span>Games learned from</span></div><div><b>${pctS(E.season?.acc ?? E.all?.acc)}</b><span>Right${E.season?.n ? ' this season' : ''}</span></div>
       <div><b>${pctS(E.last30?.acc)}</b><span>Last 30 days</span></div><div><b>${E.all?.brier != null ? E.all.brier.toFixed(3) : '—'}</b><span>Brier score (lower is better)</span></div>
       <div><b>${pctS(base)}</b><span>Home team every time</span></div>${M.blend ? `<div><b>${pctS(M.blend.accBlend)}</b><span>Model + market mix (${M.blend.n} games)</span></div>` : ''}</div>
