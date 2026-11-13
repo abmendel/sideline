@@ -858,6 +858,7 @@ td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
 .cmpbars{display:flex;flex-direction:column;gap:12px}.cb .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-variant-numeric:tabular-nums}.cb .lbl span:nth-child(2){color:var(--muted);font-size:12px}.cb .lbl b{font-weight:600}.cb .bars{display:flex;gap:4px;height:8px}.cb .bars i{display:block;height:100%;border-radius:6px}.cb .bars i.a{background:var(--away)}.cb .bars i.h{background:var(--home)}.cb .bars div{flex:1;display:flex;background:rgba(var(--fg),.06);border-radius:6px;overflow:hidden}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}#modelTrack .orow{grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 60px!important}@media (max-width:640px){#modelTrack .orow{grid-template-columns:1fr 1fr!important}.three{grid-template-columns:1fr 1fr}}
 .pl2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plrow{margin-bottom:12px}.plrow .probbar{margin-top:6px}.pltop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}.pltop .muted{font-size:11.5px}.plrow.faded{opacity:.6}@media (max-width:700px){.pl2col{grid-template-columns:1fr}}
 .parlay{margin-bottom:16px}.plegs{display:flex;flex-direction:column;gap:6px}.pleg{display:grid;grid-template-columns:24px 30px 1fr 96px 86px;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.pleg:hover{background:rgba(var(--fg),.09)}.pleg img,.pleg .logo-ph{width:28px;height:28px;object-fit:contain}.pleg .pn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--acc);color:var(--acc-ink)}.pleg .pt{min-width:0}.pleg .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pleg .pt span,.pleg .pp span{font-size:11.5px;color:var(--muted)}.pleg .pp{text-align:right}.pleg .pp b{display:block;font-variant-numeric:tabular-nums}.ptot{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}.ptot div{background:rgba(var(--fg),.06);border:1px solid var(--edge-soft);border-radius:14px;padding:10px 12px}.ptot b{display:block;font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.ptot span{font-size:11px;color:var(--dim)}.pfoot{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}.pfoot .muted{flex:1;min-width:240px;font-size:11.5px;line-height:1.45}.seg button[disabled]{opacity:.35;cursor:default}@media (max-width:700px){.phist{grid-template-columns:70px 1fr auto}.phist .po{display:none}}.pleg{position:relative}.pleg .pres{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:-4px}.phists{display:flex;flex-direction:column;gap:6px}.phist{display:grid;grid-template-columns:110px 1fr 60px auto;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;background:rgba(var(--fg),.04);font-size:12.5px}.phist .d{color:var(--muted)}.phist .po{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.phist .hl{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.hleg{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border-radius:999px;background:rgba(var(--fg),.06);font-weight:600;font-size:11.5px}.hleg img,.hleg .logo-ph{width:18px;height:18px;object-fit:contain}.hleg.w{background:rgba(var(--acc-rgb),.18);color:var(--acc-text)}.hleg.l{color:var(--bad)}@media (max-width:700px){.ptot{grid-template-columns:repeat(2,minmax(0,1fr))}.pleg{grid-template-columns:22px 26px 1fr 64px}.pleg .pp:last-child{display:none}}
+.mplist{display:flex;flex-direction:column;gap:6px}.mprow{display:grid;grid-template-columns:30px 1fr 70px 96px;align-items:center;gap:10px;padding:7px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.mprow:hover{background:rgba(var(--fg),.09)}.mprow img,.mprow .logo-ph{width:28px;height:28px;object-fit:contain}.mprow .pt{min-width:0}.mprow .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mprow .pt span,.mprow .pp span{font-size:11.5px;color:var(--muted)}.mprow .pp{text-align:right}.mprow .pp b{display:block;font-variant-numeric:tabular-nums}.mprow .chip{justify-self:end}.mptot{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 4px}.mptot span{display:block}.mph .hleg{cursor:pointer}@media (max-width:700px){.mprow{grid-template-columns:26px 1fr 52px auto}.mptot{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* ===================== Soccer additions ===================== */
 .lgbar{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px;margin:0 0 14px}
 .lgbar::-webkit-scrollbar{display:none}
@@ -1773,7 +1774,7 @@ function renderBetBox(sel, wide) {
   const box = $(sel); if (!box) return;
   const key = dayKeyOf(state.date), today = dayKeyOf(new Date());
   let b = null;
-  if (key >= today) { b = computeBest(); logBest(b); state.best = b; }
+  if (key >= today) { b = computeBest(); logBest(b); state.best = b; try { logModelPicks(state.events); } catch (e) { console.error(e); } }
   gradeOldDayPicks();
   const dp = DAYPICKS[key];
   const R = dayRecord();
@@ -2752,6 +2753,72 @@ function bindParlay() {
   $$('#picks .pleg').forEach(r => r.onclick = () => openGame(r.dataset.ev, r.dataset.lg));
   const tb = $('#parTrack'); if (tb) tb.onclick = () => { const B = computeBest(), n = state.parlayN || 3, uniq = []; (B.cands || []).filter(c => c.ml != null).sort((a, b) => b.p - a.p).forEach(c => { if (!uniq.some(u => u.ev.id === c.ev.id)) uniq.push(c); }); uniq.slice(0, n).forEach(c => { if (PICKS[c.ev.id]?.side !== c.side) makePick(c.ev, c.side); }); renderPicks(); };
 }
+/* ---------- model's picks: the most likely result (home · draw · away) in every match, graded at full time ---------- */
+const MPKEY = 'pitchside.modelpicks.v1';
+const MPICKS = store.get(MPKEY, {});
+const saveMPicks = () => { const cut = ymd(new Date(Date.now() - 75 * 864e5)); Object.keys(MPICKS).forEach(k => { if (MPICKS[k].day < cut) delete MPICKS[k]; }); store.set(MPKEY, MPICKS); };
+function logModelPicks(evs) {
+  let ch = false;
+  (evs || []).forEach(ev => {
+    const st = statusOf(ev); if (st.state !== 'pre' || st.odd || new Date(ev.date) <= new Date()) return;
+    const id = String(ev.id), cur = MPICKS[id]; if (cur && cur.result) return;
+    const b = blend(ev); if (!b) return;
+    const { home, away } = compOf(ev);
+    const side = b.p.h >= b.p.a && b.p.h >= b.p.d ? 'home' : b.p.a >= b.p.d ? 'away' : 'draw';
+    const p = side === 'home' ? b.p.h : side === 'away' ? b.p.a : b.p.d, ml = side === 'home' ? b.o?.mlH : side === 'away' ? b.o?.mlA : b.o?.mlD;
+    if (cur && cur.side === side && Math.abs(cur.p - p) < .005) return;
+    MPICKS[id] = { evId: id, lg: ev._lg, day: ymd(new Date(ev.date)), date: ev.date, side, home: slimTeam(home.team), away: slimTeam(away.team), p, ml: ml ?? null, result: null, final: '' };
+    ch = true;
+  });
+  if (ch) saveMPicks();
+}
+function gradeMPick(m, comps, done) {
+  if (!m || m.result || !done) return false;
+  const h = comps.find(x => x.homeAway === 'home') || comps.find(x => String(x.team?.id ?? x.id) === String(m.home?.id)), a = comps.find(x => x !== h);
+  if (!h || !a) return false;
+  const hs = num(scoreVal(h.score)), as = num(scoreVal(a.score)); if (hs == null || as == null) return false;
+  const res = hs > as ? 'home' : as > hs ? 'away' : 'draw';
+  m.result = res === m.side ? 'W' : 'L'; m.final = `${m.home?.abbreviation || ''} ${hs}–${as} ${m.away?.abbreviation || ''}`;
+  return true;
+}
+let mpGradeBusy = false;
+async function gradeModelPicks() {
+  if (mpGradeBusy) return; mpGradeBusy = true;
+  try {
+    let ch = false;
+    const open = Object.values(MPICKS).filter(m => !m.result);
+    open.forEach(m => { const ev = state.events.find(e => String(e.id) === m.evId); if (ev && statusOf(ev).state === 'post' && !statusOf(ev).odd && gradeMPick(m, compOf(ev).c.competitors || [], true)) ch = true; });
+    const due = open.filter(m => !m.result && Date.now() - new Date(m.date) > 3 * 3600e3).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 16);
+    await pool(due, 4, async m => { const sm = await safe(cached(`${S}/${m.lg}/summary?event=${m.evId}`, 3e5)); const hc = sm?.header?.competitions?.[0]; if (hc && gradeMPick(m, hc.competitors || [], !!hc.status?.type?.completed)) ch = true; });
+    if (ch) { saveMPicks(); if (state.tab === 'picks') renderPicks(); }
+  } finally { mpGradeBusy = false; }
+}
+function mpRecord(list) { const g = list.filter(m => m.result), w = g.filter(m => m.result === 'W').length; return { w, l: g.length - w, n: g.length, pct: g.length ? Math.round(w / g.length * 100) : null }; }
+function mpHtml() {
+  logModelPicks(state.events); gradeModelPicks();
+  const all = Object.values(MPICKS), today = ymd(new Date()), wk = ymd(new Date(Date.now() - 7 * 864e5)), view = dayKeyOf(state.date);
+  const R = mpRecord(all), R7 = mpRecord(all.filter(m => m.day > wk)), RC = mpRecord(all.filter(m => m.p >= .55)), RD = mpRecord(all.filter(m => m.side === 'draw'));
+  const days = [...new Set(all.map(m => m.day))].sort().reverse();
+  const main = days.includes(view) ? view : (days.filter(d => d >= today).sort()[0] || days[0]);
+  const pickName = m => m.side === 'draw' ? 'Draw' : tName(m[m.side]);
+  const rowOf = m => {
+    const ev = state.events.find(e => String(e.id) === m.evId), st = m.result ? 'post' : ev ? statusOf(ev).state : new Date(m.date) <= new Date() ? 'in' : 'pre';
+    const chip = m.result === 'W' ? '<span class="chip win">✓ Won</span>' : m.result === 'L' ? '<span class="chip loss">✗ Lost</span>' : st === 'in' ? '<span class="chip live"><i></i>Live</span>' : st === 'post' ? '<span class="chip pre">FT · grading</span>' : `<span class="chip pre">${esc(new Date(m.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span>`;
+    return `<div class="mprow" data-ev="${esc(m.evId)}" data-lg="${esc(m.lg)}">${m.side === 'draw' ? '<span class="logo-ph" style="display:grid;place-items:center;font-weight:700">X</span>' : logoImg(m[m.side])}<div class="pt"><b>${esc(pickName(m))}${m.side === 'draw' ? '' : ' to win'}</b><span>${esc(tName(m.home))} v ${esc(tName(m.away))} · ${esc(lgName(m.lg))}${m.final ? ' · ' + esc(m.final) : ''}</span></div><div class="pp"><b>${Math.round(m.p * 100)}%</b><span>${m.ml != null ? esc(fmtAm(m.ml)) : 'no line'}</span></div>${chip}</div>`;
+  };
+  const tile = (k, r) => `<div><b>${r.n ? `${r.w}–${r.l}` : '—'}</b><span>${k}${r.n ? ` · ${r.pct}%` : ''}</span></div>`;
+  let body = '<p class="muted" style="margin:0">The model’s call for every match in your leagues is saved here the first time the dashboard is open before kick-off, then graded at full time.</p>';
+  if (all.length) {
+    const L = all.filter(m => m.day === main).sort((a, b) => new Date(a.date) - new Date(b.date) || b.p - a.p), rm = mpRecord(L);
+    const past = days.filter(d => d !== main && d < today).slice(0, 14);
+    body = `<div class="ptot mptot" style="grid-template-columns:repeat(4,minmax(0,1fr))">${tile('All picks', R)}${tile('Last 7 days', R7)}${tile('55%+ confident', RC)}${tile('Draw calls', RD)}</div>
+      <div class="sublabel">${esc(main === today ? 'Today' : fromYmd(main).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }))}${rm.n ? ` · ${rm.w}–${rm.l} so far` : ''}</div><div class="mplist">${L.slice(0, 40).map(rowOf).join('')}</div>
+      ${past.length ? `<div class="sublabel">Earlier days</div><div class="phists">${past.map(d => { const D = all.filter(m => m.day === d).sort((a, b) => b.p - a.p), r = mpRecord(D);
+        return `<div class="phist mph"><span class="d">${esc(fromYmd(d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</span><span class="hl">${D.slice(0, 16).map(m => `<span class="hleg ${m.result === 'W' ? 'w' : m.result === 'L' ? 'l' : ''}" data-ev="${esc(m.evId)}" data-lg="${esc(m.lg)}" title="${esc(pickName(m) + ' · ' + Math.round(m.p * 100) + '%' + (m.final ? ' · ' + m.final : ''))}">${m.side === 'draw' ? '' : logoImg(m[m.side])}${esc(m.side === 'draw' ? 'Draw' : m[m.side]?.abbreviation || '')}${m.result === 'W' ? ' ✓' : m.result === 'L' ? ' ✗' : ''}</span>`).join('')}${D.length > 16 ? `<span class="sub">+${D.length - 16}</span>` : ''}</span><span class="po">${r.n ? `${r.w}–${r.l}` : ''}</span>${r.n && r.n === D.length ? `<span class="chip ${r.w >= r.l ? 'win' : 'loss'}">${r.pct}%</span>` : '<span class="chip pre">Pending</span>'}</div>`; }).join('')}</div>` : ''}`;
+  }
+  return `<div class="panel glass parlay" id="mpBox"><div class="ph"><span class="pic">🧠</span><h3>Model’s picks</h3><span class="sub">our model’s most likely result (home · draw · away) in every match · ✓/✗ at full time</span></div>${body}
+    <p class="muted" style="margin:10px 0 0;font-size:11.5px;line-height:1.45">Each pick is the result with the highest chance from our model blended with DraftKings’ three-way line (margin removed). Picks lock at kick-off and are saved in this browser. For fun only · 21+ · 1-800-GAMBLER</p></div>`;
+}
 function renderPicks() {
   const all = Object.entries(PICKS).map(([id, p]) => ({ id, ...p })).sort((a, b) => new Date(b.date) - new Date(a.date));
   const done = all.filter(p => p.result), open = all.filter(p => !p.result);
@@ -2759,7 +2826,7 @@ function renderPicks() {
   const draws = done.filter(p => p.side === 'draw'), dw = draws.filter(p => p.result === 'W').length;
   const upcoming = state.events.filter(e => statusOf(e).state === 'pre' && !statusOf(e).odd && !PICKS[e.id]).slice(0, 12);
   const row = p => { const nm = p.side === 'draw' ? 'Draw' : (p.side === 'home' ? p.home : p.away)?.shortDisplayName || ''; return `<div class="fx" data-ev="${esc(p.id)}" data-lg="${esc(p.lg)}"><span class="d">${esc(new Date(p.date).toLocaleDateString([], { month: 'short', day: 'numeric' }))}<br>${esc(lgName(p.lg)).slice(0, 14)}</span><span class="m">${logoImg(p.home)}<span>${esc(p.home?.shortDisplayName || '')} v ${esc(p.away?.shortDisplayName || '')}</span>${logoImg(p.away)}</span><span class="r"><span class="muted">${esc(nm)}</span>${p.result === 'W' ? '<span class="chip win">✓</span>' : p.result === 'L' ? `<span class="chip loss">✗ ${esc(p.final || '')}</span>` : '<span class="chip pre">Open</span>'}</span></div>`; };
-  $('#picks').innerHTML = parlayHtml() + `<div class="picks-grid"><div>
+  $('#picks').innerHTML = parlayHtml() + mpHtml() + `<div class="picks-grid"><div>
       <div class="panel glass"><div class="ph"><span class="pic">🎯</span><h3>Your record</h3><span class="sub">1 · X · 2 picks for fun</span></div>
         <div class="ptiles"><div class="tile"><div class="k">Correct</div><div class="v">${w}–${done.length - w}</div><div class="s">${done.length ? Math.round(w / done.length * 100) + '% hit rate' : 'No results yet'}</div></div>
         <div class="tile"><div class="k">Open picks</div><div class="v">${open.length}</div><div class="s">graded at full time</div></div>
@@ -2768,6 +2835,7 @@ function renderPicks() {
     <div class="panel glass">${panelHead('Pick history', `${all.length} pick${all.length === 1 ? '' : 's'}`, IC.st)}${all.length ? `<div class="fixtures">${all.slice(0, 60).map(row).join('')}</div>` : '<div class="muted">Your picks appear here. Tap Home, Draw or Away on any upcoming match.</div>'}</div></div>`;
   bindPickButtons($('#picks'), state.events, renderPicks);
   bindParlay();
+  $$('#mpBox [data-ev]').forEach(r => r.onclick = e => { e.stopPropagation(); openGame(r.dataset.ev, r.dataset.lg); });
   $$('#picks .fx[data-ev]').forEach(r => r.onclick = () => openGame(r.dataset.ev, r.dataset.lg));
 }
 

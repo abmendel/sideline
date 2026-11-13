@@ -796,6 +796,7 @@ img{max-width:100%}
 .cmpbars{display:flex;flex-direction:column;gap:12px}.cb .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-variant-numeric:tabular-nums}.cb .lbl span:nth-child(2){color:var(--muted);font-size:12px}.cb .lbl b{font-weight:600}.cb .bars{display:flex;gap:4px;height:8px}.cb .bars i{display:block;height:100%;border-radius:6px}.cb .bars i.a{background:var(--away)}.cb .bars i.h{background:var(--home)}.cb .bars div{flex:1;display:flex;background:rgba(var(--fg),.06);border-radius:6px;overflow:hidden}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}#modelTrack .orow{grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 60px!important}@media (max-width:640px){#modelTrack .orow{grid-template-columns:1fr 1fr!important}.three{grid-template-columns:1fr 1fr}}
 .pl2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plrow{margin-bottom:12px}.plrow .probbar{margin-top:6px}.pltop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}.pltop .muted{font-size:11.5px}.plrow.faded{opacity:.6}@media (max-width:700px){.pl2col{grid-template-columns:1fr}}
 .parlay{margin-bottom:16px}.plegs{display:flex;flex-direction:column;gap:6px}.pleg{display:grid;grid-template-columns:24px 30px 1fr 96px 86px;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.pleg:hover{background:rgba(var(--fg),.09)}.pleg img,.pleg .logo-ph{width:28px;height:28px;object-fit:contain}.pleg .pn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--acc);color:var(--acc-ink)}.pleg .pt{min-width:0}.pleg .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pleg .pt span,.pleg .pp span{font-size:11.5px;color:var(--muted)}.pleg .pp{text-align:right}.pleg .pp b{display:block;font-variant-numeric:tabular-nums}.ptot{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}.ptot div{background:rgba(var(--fg),.06);border:1px solid var(--edge-soft);border-radius:14px;padding:10px 12px}.ptot b{display:block;font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.ptot span{font-size:11px;color:var(--dim)}.pfoot{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}.pfoot .muted{flex:1;min-width:240px;font-size:11.5px;line-height:1.45}.seg button[disabled]{opacity:.35;cursor:default}@media (max-width:700px){.phist{grid-template-columns:70px 1fr auto}.phist .po{display:none}}.pleg{position:relative}.pleg .pres{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:-4px}.phists{display:flex;flex-direction:column;gap:6px}.phist{display:grid;grid-template-columns:110px 1fr 60px auto;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;background:rgba(var(--fg),.04);font-size:12.5px}.phist .d{color:var(--muted)}.phist .po{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.phist .hl{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.hleg{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border-radius:999px;background:rgba(var(--fg),.06);font-weight:600;font-size:11.5px}.hleg img,.hleg .logo-ph{width:18px;height:18px;object-fit:contain}.hleg.w{background:rgba(var(--acc-rgb),.18);color:var(--acc-text)}.hleg.l{color:var(--bad)}@media (max-width:700px){.ptot{grid-template-columns:repeat(2,minmax(0,1fr))}.pleg{grid-template-columns:22px 26px 1fr 64px}.pleg .pp:last-child{display:none}}
+.mplist{display:flex;flex-direction:column;gap:6px}.mprow{display:grid;grid-template-columns:30px 1fr 70px 96px;align-items:center;gap:10px;padding:7px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.mprow:hover{background:rgba(var(--fg),.09)}.mprow img,.mprow .logo-ph{width:28px;height:28px;object-fit:contain}.mprow .pt{min-width:0}.mprow .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mprow .pt span,.mprow .pp span{font-size:11.5px;color:var(--muted)}.mprow .pp{text-align:right}.mprow .pp b{display:block;font-variant-numeric:tabular-nums}.mprow .chip{justify-self:end}.mptot{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 4px}.mptot span{display:block}.mph .hleg{cursor:pointer}@media (max-width:700px){.mprow{grid-template-columns:26px 1fr 52px auto}.mptot{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -877,7 +878,7 @@ img{max-width:100%}
       <p class="rg">Lines are DraftKings odds as reported through ESPN’s feed (DraftKings is ESPN’s official odds provider). They refresh with the dashboard, can trail the sportsbook by a minute or more, and in-game lines aren’t always published. “Fair win %” is the moneyline’s implied probability with the sportsbook’s margin removed. Make your own picks for fun on the Picks page. 21+ only. If gambling stops being fun, call 1-800-GAMBLER.</p>
     </section>
 
-    <section id="view-picks" class="hidden"><div id="parlayBox"></div><div class="picks-grid" id="picks"></div></section>
+    <section id="view-picks" class="hidden"><div id="parlayBox"></div><div id="mpBox"></div><div class="picks-grid" id="picks"></div></section>
     <section id="view-matchup" class="hidden"><div id="matchup"></div></section>
     <section id="view-compare" class="hidden"><div id="compare"></div></section>
 
@@ -1156,7 +1157,7 @@ function logBest(b) {
   DAYPICKS[key] = { key, label: SPORTX.label(key), evId: String(c.ev.id), date: c.ev.date, side: c.side, team: slimTeam(c.team), opp: slimTeam(c.opp), p: c.p, model: c.model, market: c.market, ml: c.ml, savedAt: Date.now(), result: null, final: '' };
   saveDayPicks();
 }
-async function computeBest() { const b = await computeBestRaw(); try { logBest(b); } catch (e) { console.error(e); } return b; }
+async function computeBest() { const b = await computeBestRaw(); try { logBest(b); } catch (e) { console.error(e); } try { logModelPicks(b); } catch (e) { console.error(e); } return b; }
 function gradeDayPick(dp, comps, done) {
   if (!dp || dp.result || !done) return false;
   const me = comps.find(x => String(x.team?.id ?? x.id) === String(dp.team?.id)), op = comps.find(x => x !== me);
@@ -2998,7 +2999,7 @@ async function openPicker(mode, slotIdx) {
    Settings
    ===================================================================== */
 function rerenderAll() {
-  if (state.tab === 'picks') renderParlay();
+  if (state.tab === 'picks') { renderParlay(); renderModelPicks(); }
   if (state.tab === 'model') renderTracker();
   if (state.events.length) renderScores();
   if (state.tab === 'odds') renderOdds();
@@ -3131,7 +3132,7 @@ async function tick() {
   clearTimeout(state.timer);
   if (state.tab === 'scores' || state.tab === 'odds') await loadScores(true);
   else if (state.tab === 'mine') await loadMine(true);
-  else if (state.tab === 'picks') { await loadPicks(); renderParlay(); }
+  else if (state.tab === 'picks') { await loadPicks(); renderParlay(); renderModelPicks(); }
   else if (state.tab === 'standings') await loadStandings(true);
   else if (state.tab === 'news') await loadNews(true);
   else if (state.tab === 'season') await loadSeason(true);
@@ -3162,7 +3163,7 @@ function setTab(tab) {
   else   if (tab === 'standings') { if (state.standings) renderStandings(); loadStandings(!!state.standings).then(schedule); }
   else if (tab === 'news') loadNews(!!state.news).then(schedule);
   else if (tab === 'mine') loadMine(true).then(schedule);
-  else if (tab === 'picks') { renderParlay(); loadPicks().then(schedule); }
+  else if (tab === 'picks') { renderParlay().then(renderModelPicks); loadPicks().then(schedule); }
   else if (tab === 'compare') { renderCompare(); schedule(); }
   else if (tab === 'matchup') { renderMatchup(); schedule(); }
   else if (tab === 'season') { if (SS.rows.length || SS.teams) { renderSeason(); schedule(); } else loadSeason(true).then(schedule); }
@@ -3456,6 +3457,80 @@ function parlayHistory(n, curKey) {
       <span class="po">${esc(fmtAm(amFromDec(dec)))}</span>${out === 'W' ? '<span class="chip win">✓ Hit</span>' : out === 'L' ? `<span class="chip loss">✗ ${L.filter(l => l.result === 'W').length}/${L.length}</span>` : '<span class="chip pre">Pending</span>'}</div>`;
   }).join('');
   return `<div class="sublabel">Past parlays${R.n ? ` · ${n}-leg record <b style="color:var(--text)">${R.w}–${R.n - R.w}</b> · legs won ${R.ln ? Math.round(R.lw / R.ln * 100) : 0}% (${R.lw}/${R.ln})` : ''}</div><div class="phists">${rows}</div>`;
+}
+
+/* =====================================================================
+   Model's picks (Picks tab) — the model's side in every game, saved in
+   this browser, locked at the start and graded ✓/✗ after the final
+   ===================================================================== */
+const MPKEY = `sideline.${SPORTX.id}.modelpicks.v1`;
+const MPICKS = store.get(MPKEY, {});            // event id -> { evId, day, date, side, team, opp, p, ml, result, final }
+const saveMPicks = () => {
+  const cut = ymd(new Date(Date.now() - 75 * 864e5));
+  Object.keys(MPICKS).forEach(k => { if (MPICKS[k].day < cut) delete MPICKS[k]; });
+  store.set(MPKEY, MPICKS);
+};
+function logModelPicks(b) {
+  if (!b || !b.ok || !b.cands) return;
+  const best = {};
+  b.cands.forEach(c => { const id = String(c.ev.id); if (!best[id] || c.p > best[id].p) best[id] = c; });
+  let ch = false;
+  Object.values(best).forEach(c => {
+    const id = String(c.ev.id), cur = MPICKS[id];
+    if (cur && (cur.result || new Date(cur.date) <= new Date())) return;      // locked once the game starts
+    if (statusOf(c.ev).state !== 'pre') return;
+    MPICKS[id] = { evId: id, day: ymd(new Date(c.ev.date)), date: c.ev.date, side: c.side, team: slimT2(c.team), opp: slimT2(c.opp), p: c.p, ml: c.ml ?? null, result: null, final: '' };
+    ch = true;
+  });
+  if (ch) saveMPicks();
+}
+let mpGradeBusy = false;
+async function gradeModelPicks() {
+  if (mpGradeBusy) return false; mpGradeBusy = true;
+  let ch = false;
+  try {
+    const evs = [...(state.events || []), ...(state.todayEvents || [])];
+    const open = Object.values(MPICKS).filter(m => !m.result);
+    open.forEach(m => { const ev = evs.find(e => String(e.id) === m.evId); if (ev && statusOf(ev).state === 'post' && gradeLeg(m, ev.competitions?.[0]?.competitors || [], true)) ch = true; });
+    const due = open.filter(m => !m.result && Date.now() - new Date(m.date) > 3 * 3600e3).sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 16);
+    await pool(due, 4, async m => { const sm = await safe(cached(`${API}/summary?event=${m.evId}`, 3e5)); const hc = sm?.header?.competitions?.[0]; if (hc && gradeLeg(m, hc.competitors || [], !!hc.status?.type?.completed)) ch = true; });
+    if (ch) saveMPicks();
+  } finally { mpGradeBusy = false; }
+  return ch;
+}
+function mpRecord(list) { const g = list.filter(m => m.result === 'W' || m.result === 'L'), w = g.filter(m => m.result === 'W').length; return { w, l: g.length - w, n: g.length, pct: g.length ? Math.round(w / g.length * 100) : null }; }
+const mpDay = k => new Date(+k.slice(0, 4), +k.slice(4, 6) - 1, +k.slice(6, 8));
+async function renderModelPicks() {
+  const box = $('#mpBox'); if (!box) return;
+  if (state.best?.cands) { try { logModelPicks(state.best); } catch (e) { console.error(e); } }
+  const draw = () => {
+    if (state.tab !== 'picks') return;
+    const all = Object.values(MPICKS);
+    const today = ymd(new Date()), wk = ymd(new Date(Date.now() - 7 * 864e5));
+    const R = mpRecord(all), R7 = mpRecord(all.filter(m => m.day > wk)), RC = mpRecord(all.filter(m => m.p >= .65));
+    const evs = [...(state.events || []), ...(state.todayEvents || []), ...((state.best?.cands || []).map(c => c.ev))];
+    const evOf = id => evs.find(e => String(e.id) === id);
+    const days = [...new Set(all.map(m => m.day))].sort().reverse();
+    const shown = days.filter(d => d >= today).sort();
+    if (!shown.length && days.length) shown.push(days[0]);
+    const rowOf = m => {
+      const ev = evOf(m.evId), st = m.result ? 'post' : ev ? statusOf(ev).state : new Date(m.date) <= new Date() ? 'in' : 'pre';
+      const chip = m.result === 'W' ? '<span class="chip win">✓ Won</span>' : m.result === 'L' ? '<span class="chip loss">✗ Lost</span>' : st === 'in' ? '<span class="chip live"><i></i>Live</span>' : st === 'post' ? '<span class="chip pre">Final · grading</span>' : `<span class="chip pre">${esc(new Date(m.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span>`;
+      return `<div class="mprow" data-ev="${esc(m.evId)}">${logoImg(m.team)}<div class="pt"><b>${esc(m.team?.shortDisplayName || m.team?.abbreviation)}</b><span>${m.side === 'home' ? 'vs' : '@'} ${esc(m.opp?.abbreviation || '')}${m.final ? ' · ' + esc(m.final) : ''}</span></div><div class="pp"><b>${Math.round(m.p * 100)}%</b><span>${m.ml != null ? esc(fmtAm(m.ml)) : 'no line'}</span></div>${chip}</div>`;
+    };
+    const section = d => { const L = all.filter(m => m.day === d).sort((a, b) => new Date(a.date) - new Date(b.date) || b.p - a.p), r = mpRecord(L);
+      return `<div class="sublabel">${esc(d === today ? 'Today' : mpDay(d).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }))}${r.n ? ` · ${r.w}–${r.l} so far` : ''}</div><div class="mplist">${L.map(rowOf).join('')}</div>`; };
+    const past = days.filter(d => !shown.includes(d)).slice(0, 14);
+    const pastHtml = past.length ? `<div class="sublabel">Earlier days</div><div class="phists">${past.map(d => { const L = all.filter(m => m.day === d).sort((a, b) => b.p - a.p), r = mpRecord(L);
+      return `<div class="phist mph"><span class="d">${esc(mpDay(d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</span><span class="hl">${L.map(m => `<span class="hleg ${m.result === 'W' ? 'w' : m.result === 'L' ? 'l' : ''}" data-ev="${esc(m.evId)}" title="${esc((m.team?.shortDisplayName || '') + ' to win · ' + Math.round(m.p * 100) + '%' + (m.final ? ' · ' + m.final : ''))}">${logoImg(m.team)}${esc(m.team?.abbreviation || '')}${m.result === 'W' ? ' ✓' : m.result === 'L' ? ' ✗' : ''}</span>`).join('')}</span><span class="po">${r.n ? `${r.w}–${r.l}` : ''}</span>${r.n === L.length && r.n ? `<span class="chip ${r.w >= r.l ? 'win' : 'loss'}">${r.pct}%</span>` : '<span class="chip pre">Pending</span>'}</div>`; }).join('')}</div>` : '';
+    const tile = (k, r, s) => `<div><b>${r.n ? `${r.w}–${r.l}` : '—'}</b><span>${k}${r.n ? ` · ${r.pct}%` : ''}</span>${s ? `<span>${s}</span>` : ''}</div>`;
+    box.innerHTML = `<div class="panel glass parlay"><div class="ph"><span class="pic">🧠</span><h3>Model’s picks</h3><span class="sub">the side our model favors in every game · ✓/✗ after the final</span></div>
+      ${all.length ? `<div class="ptot mptot">${tile('All picks', R)}${tile('Last 7 days', R7)}${tile('65%+ confident', RC)}</div>${shown.map(section).join('')}${pastHtml}` : '<p class="muted" style="margin:0">The model’s pick for every game is saved here the first time the dashboard is open before the games, then graded after the final.</p>'}
+      <p class="muted" style="margin:10px 0 0;font-size:11.5px;line-height:1.45">Each pick is the team with the higher win chance from our model blended with DraftKings (margin removed). Picks lock when their game starts and are saved in this browser. For fun only · 21+ · 1-800-GAMBLER</p></div>`;
+    $$('#mpBox [data-ev]').forEach(r => r.onclick = e => { e.stopPropagation(); openGame(r.dataset.ev); });
+  };
+  draw();
+  if (await gradeModelPicks()) draw();
 }
 
 /* =====================================================================
