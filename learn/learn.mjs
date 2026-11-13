@@ -8,7 +8,8 @@
 // grade it walk-forward (every game predicted using only earlier games) and fit how much to trust
 // the model versus the betting market once enough snapshots have results.
 import fs from 'node:fs/promises';
-import { backfill } from './box.mjs';
+import { backfill, loadBox } from './box.mjs';
+import { tuneUS, walkUS, evalRows, scoreUS, fitBlendUS, tuneSoccer, walkSoccer, evalSoccer, scoreSoccer, fitBlend3, pOf, pick3 } from './model2.mjs';
 
 const SPORTS = {
   nba: { path: 'basketball/nba', mode: 'day', K: 20, hfa: 100, carry: .25, rest: true, sd: 12, lambda: 8, seasons: 3 },
@@ -231,7 +232,7 @@ export function train(sp, games, snaps, S = SPORTS[sp]) {
     const acc = f => avg(bl.map(({ s, g }) => ((f(s) > .5) === (g.hs > g.as)) ? 1 : 0));
     blend = { a: +a.toFixed(4), wModel: +wm.toFixed(4), wMarket: +wk.toFixed(4), n: bl.length, accModel: +acc(s => s.pModel).toFixed(4), accMarket: +acc(s => s.fairH).toFixed(4), accBlend: +acc(s => sigm(a + wm * logit(s.pModel) + wk * logit(s.fairH))).toFixed(4) };
   }
-  return { sport: sp, version: 1, updated: new Date().toISOString(), features: FEATURES, w: w.map(v => +v.toFixed(4)), sigma: +sigma.toFixed(3), rest: S.rest, games: rows.length, seasons, curSeason, teams, eval: evalOut, blend, snapshots: Object.keys(snaps).length };
+  return { sport: sp, version: 1, updated: new Date().toISOString(), features: FEATURES, w: w.map(v => +v.toFixed(4)), sigma: +sigma.toFixed(3), rest: S.rest, games: rows.length, seasons, curSeason, teams, eval: evalOut, blend, snapshots: Object.keys(snaps).length, _wf: wf };
 }
 
 /* ------------------------------------------------------------------ accuracy tracker
@@ -259,6 +260,59 @@ function trackerOf(scored, S) {
   return { draws: !!S.draws, calib, weeks, confident: { cut: confCut, n: conf.length, acc: r4(avg(conf.map(r => r.ok ? 1 : 0))) }, market, recent, base };
 }
 
+/* ------------------------------------------------------------------ model v2 (see learn/model2.mjs, learn/predict.js) */
+const r4 = v => v == null ? null : +(+v).toFixed(4);
+const LLp = p => -Math.log(Math.min(1 - 1e-6, Math.max(1e-6, p)));
+function evalOf(rows, S) {        // the same report card the Model tab has always shown
+  const sum = list => list.length ? { n: list.length, acc: r4(avg(list.map(r => r.ok ? 1 : 0))), brier: r4(avg(list.map(r => r.brier))), logloss: r4(avg(list.map(r => r.ll))), homeAcc: r4(avg(list.map(r => r.home ? 1 : 0))) } : { n: 0 };
+  const cur = rows.length ? rows[rows.length - 1].season : null, cutoff = ymd(new Date(Date.now() - 30 * 864e5));
+  const months = {}; rows.forEach(r => { const k = `${r.d.slice(0, 4)}-${r.d.slice(4, 6)}`; (months[k] = months[k] || []).push(r); });
+  return { all: sum(rows), season: sum(rows.filter(r => r.season === cur)), last30: sum(rows.filter(r => r.d >= cutoff)), months: Object.entries(months).sort().slice(-14).map(([m, l]) => ({ m, ...sum(l) })), ...trackerOf(rows, S) };
+}
+function trainUSv2(sp, store, box, S, log) {
+  const tune = tuneUS(sp, store.games, box, S, log);
+  const r = walkUS(sp, store.games, box, S, tune.P);
+  const ev = evalRows(r.wf, r.seasons);
+  const { blend, holdout } = fitBlendUS(ev);
+  const rows = r.wf.filter(x => x.n >= 40).map(x => {
+    const pred = x.p > .5 ? 'H' : 'A', res = x.y ? 'H' : 'A';
+    return { id: x.id, date: x.date, d: x.d, season: x.season, h: x.h, a: x.a, hs: x.hs, as: x.as, pH: x.p, pD: 0, pA: 1 - x.p, pred, res, ok: pred === res, conf: Math.max(x.p, 1 - x.p), brier: (x.p - x.y) ** 2, ll: LLp(x.y ? x.p : 1 - x.p), home: !!x.y, n: x.n, mk: x.mkH != null ? { h: x.mkH, d: null, a: 1 - x.mkH } : null };
+  });
+  const teams = {};
+  Object.keys(r.T).filter(r.real).forEach(id => {
+    const t = r.team(id, r.curSeason);
+    const rot = {}; Object.entries(t.rot || {}).forEach(([p, m]) => { if (m >= 4) rot[p] = +m.toFixed(1); });
+    teams[id] = { elo: +t.elo.toFixed(1), msum: t.msum, gp: t.gp, last: t.last, lastDate: t.lastDate, net: r4(t.net), ng: r4(t.ng), sd: r4(t.sd), sg: r4(t.sg), lastG: t.lastG, ypp: r4(t.ypp), yg: r4(t.yg), qb: t.qb, ...(Object.keys(rot).length ? { rot } : {}) };
+  });
+  const T = r.tables, inRot = new Set(Object.values(teams).flatMap(t => Object.keys(t.rot || {})));
+  const pick = (o, keep, round) => Object.fromEntries(Object.entries(o).filter(([id, v]) => keep(id, v)).map(([id, v]) => [id, v.map(round)]));
+  const tables = sp === 'nba' ? { players: pick(T.players, id => inRot.has(id), v => +v.toFixed(1)) }
+    : sp === 'nhl' ? { goalies: pick(T.goalies, (id, v) => v[0] >= 60, v => +v.toFixed(1)), lgSv: r4(T.lgSv) }
+    : sp === 'mlb' ? { pitchers: pick(T.pitchers, (id, v) => v[0] >= 15, v => +v.toFixed(1)), lgFip: r4(T.lgFip), cFip: r4(T.cFip) }
+    : { qbs: pick(T.qbs, (id, v) => v[0] >= 20, v => +v.toFixed(1)), lgAny: r4(T.lgAny) };
+  const snaps = Object.keys(store.snaps).length;
+  return { sport: sp, version: 2, updated: new Date().toISOString(), features: r.list, w: r.w.map(v => +v.toFixed(4)), sigma: +r.sigma.toFixed(3), rest: S.rest, params: tune.P,
+    games: r.rows, seasons: r.seasons, curSeason: r.curSeason, teams, tables, eval: evalOf(rows, S),
+    blend: blend ? { ...blend, wModel: blend.wm, wMarket: blend.wk, accModel: holdout.model.acc, accMarket: holdout.market.acc, accBlend: holdout.blend.acc } : null,
+    compare: { old: tune.old, new: tune.score, holdout }, snapshots: snaps };
+}
+function trainSoccerV2(lg, store, box, S, log) {
+  const best = tuneSoccer(lg, store.games, box, S);
+  if (!best) return null;
+  const r = walkSoccer(lg, store.games, box, S, best.P), ev = evalSoccer(r.wf, r.seasons);
+  const { blend, holdout } = fitBlend3(ev);
+  const legacy = train(lg, store.games, store.snaps, S), ids = new Set(ev.map(x => x.id));
+  const oldRows = (legacy._wf || []).filter(x => ids.has(x.id)), old = { n: oldRows.length, logloss: r4(avg(oldRows.map(x => LLp(x.res === 'H' ? x.pH : x.res === 'D' ? x.pD : x.pA)))), acc: r4(avg(oldRows.map(x => x.ok ? 1 : 0))) };
+  const sc = scoreSoccer(ev);
+  log(`${lg}: tuned ${JSON.stringify(best.P)} · log loss ${sc.logloss} (old ${old.logloss}) · right ${(sc.acc * 100).toFixed(1)}% (old ${(old.acc * 100).toFixed(1)}%) on ${sc.n} matches${holdout ? ` · holdout model ${holdout.model.logloss} market ${holdout.market.logloss} blend ${holdout.blend.logloss}` : ''}`);
+  const rows = r.wf.filter(x => x.n >= 40).map(x => { const pred = pick3(x.pr); return { id: x.id, date: x.date, d: x.d, season: x.season, h: x.h, a: x.a, hs: x.hs, as: x.as, pH: x.pr.h, pD: x.pr.d, pA: x.pr.a, pred, res: x.res, ok: pred === x.res, conf: Math.max(x.pr.h, x.pr.d, x.pr.a), brier: (x.pr.h - (x.res === 'H')) ** 2 + (x.pr.d - (x.res === 'D')) ** 2 + (x.pr.a - (x.res === 'A')) ** 2, ll: LLp(pOf(x.pr, x.res)), home: x.res === 'H', n: x.n, mk: x.mk }; });
+  const cur = r.seasons[r.seasons.length - 1], teams = {};
+  Object.keys(r.T).filter(r.real).forEach(id => { const t = r.T[id], k = t.season != null && cur != null && t.season !== cur ? best.P.carry : 1; teams[id] = { att: r4(t.att * k), def: r4(t.def * k) }; });
+  return { sport: lg, version: 2, kind: 'soccer', updated: new Date().toISOString(), mu: r4(r.mu), home: r4(r.home), rho: best.P.rho, params: best.P, games: r.wf.length, seasons: r.seasons, curSeason: cur, teams,
+    eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length };
+}
+
+const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500 };
 /* ------------------------------------------------------------------ main */
 async function run(sp, log) {
   const S = SPORTS[sp];
@@ -268,13 +322,14 @@ async function run(sp, log) {
   const keep = new Set([...new Set(Object.values(store.games).map(g => g.season).filter(v => v != null))].sort((a, b) => a - b).slice(-(S.seasons || 2)));
   Object.keys(store.games).forEach(id => { if (store.games[id].season != null && !keep.has(store.games[id].season)) delete store.games[id]; });
   Object.keys(store.snaps).forEach(id => { if (!store.games[id]) delete store.snaps[id]; });
-  const model = train(sp, store.games, store.snaps, S);
   await writeJSON(`${sp}-games.json`, store);
+  const box = await backfill(sp, S, store, fetchJSON, log, BOXCAP[sp] || 900);
+  const model = S.draws ? trainSoccerV2(sp, store, box, S, log) : trainUSv2(sp, store, box, S, log);
+  if (!model) { log(`${sp}: not enough games to train`); return null; }
   await writeJSON(`model-${sp}.json`, model);
-  log(`${sp}: ${model.games} games learned · walk-forward ${(model.eval.all.acc * 100 || 0).toFixed(1)}% (home ${(model.eval.all.homeAcc * 100 || 0).toFixed(1)}%) · this season ${model.eval.season.n || 0} games ${(model.eval.season.acc * 100 || 0).toFixed(1)}% · snapshots ${model.snapshots}${model.blend ? ` · blend ${JSON.stringify(model.blend)}` : ''}`);
+  log(`${sp}: ${model.games} games learned · walk-forward ${(model.eval.all.acc * 100 || 0).toFixed(1)}% · this season ${model.eval.season.n || 0} games ${(model.eval.season.acc * 100 || 0).toFixed(1)}% · ${model.blend ? `blend ${JSON.stringify(model.blend)}` : 'no blend yet'} · holdout ${JSON.stringify(model.compare?.holdout)}`);
   return model;
 }
-const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500 };
 async function collectOnly(sp, log) {          // fetch games + box scores + lines, keep the current model
   const S = SPORTS[sp];
   const store = await readJSON(`${sp}-games.json`, { games: {}, snaps: {}, fetched: {} });
@@ -294,4 +349,4 @@ if (import.meta.url === `file://${process.argv[1]}` && process.argv.includes('--
     try { await run(sp, console.log); } catch (e) { console.error(`${sp}: failed — ${e.message}`); if (!SPORTS[sp].draws) process.exitCode = 1; }   // a soccer league hiccup shouldn't raise the alarm
   }
 }
-export { run, SPORTS, featuresFor, probs3, oddsOf, Phi, newTeam };
+export { run, SPORTS, featuresFor, probs3, oddsOf, Phi, newTeam, trainUSv2, trainSoccerV2 };

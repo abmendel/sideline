@@ -860,6 +860,7 @@ td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
 .parlay{margin-bottom:16px}.plegs{display:flex;flex-direction:column;gap:6px}.pleg{display:grid;grid-template-columns:24px 30px 1fr 96px 86px;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.pleg:hover{background:rgba(var(--fg),.09)}.pleg img,.pleg .logo-ph{width:28px;height:28px;object-fit:contain}.pleg .pn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--acc);color:var(--acc-ink)}.pleg .pt{min-width:0}.pleg .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pleg .pt span,.pleg .pp span{font-size:11.5px;color:var(--muted)}.pleg .pp{text-align:right}.pleg .pp b{display:block;font-variant-numeric:tabular-nums}.ptot{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:12px}.ptot div{background:rgba(var(--fg),.06);border:1px solid var(--edge-soft);border-radius:14px;padding:10px 12px}.ptot b{display:block;font-size:19px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.ptot span{font-size:11px;color:var(--dim)}.pfoot{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}.pfoot .muted{flex:1;min-width:240px;font-size:11.5px;line-height:1.45}.seg button[disabled]{opacity:.35;cursor:default}@media (max-width:700px){.phist{grid-template-columns:70px 1fr auto}.phist .po{display:none}}.pleg{position:relative}.pleg .pres{grid-column:1/-1;display:flex;justify-content:flex-end;margin-top:-4px}.phists{display:flex;flex-direction:column;gap:6px}.phist{display:grid;grid-template-columns:110px 1fr 60px auto;align-items:center;gap:10px;padding:7px 10px;border-radius:12px;background:rgba(var(--fg),.04);font-size:12.5px}.phist .d{color:var(--muted)}.phist .po{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.phist .hl{display:flex;gap:6px;flex-wrap:wrap;min-width:0}.hleg{display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 3px;border-radius:999px;background:rgba(var(--fg),.06);font-weight:600;font-size:11.5px}.hleg img,.hleg .logo-ph{width:18px;height:18px;object-fit:contain}.hleg.w{background:rgba(var(--acc-rgb),.18);color:var(--acc-text)}.hleg.l{color:var(--bad)}@media (max-width:700px){.ptot{grid-template-columns:repeat(2,minmax(0,1fr))}.pleg{grid-template-columns:22px 26px 1fr 64px}.pleg .pp:last-child{display:none}}
 .mplist{display:flex;flex-direction:column;gap:6px}.mprow{display:grid;grid-template-columns:30px 1fr 70px 96px;align-items:center;gap:10px;padding:7px 10px;border-radius:14px;background:rgba(var(--fg),.05);cursor:pointer}.mprow:hover{background:rgba(var(--fg),.09)}.mprow img,.mprow .logo-ph{width:28px;height:28px;object-fit:contain}.mprow .pt{min-width:0}.mprow .pt b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mprow .pt span,.mprow .pp span{font-size:11.5px;color:var(--muted)}.mprow .pp{text-align:right}.mprow .pp b{display:block;font-variant-numeric:tabular-nums}.mprow .chip{justify-self:end}.mptot{grid-template-columns:repeat(3,minmax(0,1fr));margin:0 0 4px}.mptot span{display:block}.mph .hleg{cursor:pointer}@media (max-width:700px){.mprow{grid-template-columns:26px 1fr 52px auto}.mptot{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .syncbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px;padding:14px 18px}.syncl{flex:1;min-width:260px;display:flex;flex-direction:column;gap:3px}.syncl b{font-weight:600}.syncl span{font-size:12.5px;color:var(--muted);line-height:1.45}.syncl code{font-size:12px;padding:1px 6px;border-radius:6px;background:rgba(var(--fg),.08);color:var(--text);user-select:all}.syncr{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.syncr input{min-width:240px;padding:8px 12px;border-radius:999px;border:1px solid var(--edge-soft);background:rgba(var(--fg),.06);color:var(--text);font:inherit;font-size:13px}
+.parmode{margin-right:8px}
 </style>
 </head>
 <body>
@@ -971,6 +972,7 @@ td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
   <div class="mbody" id="pBody"></div>
 </div>
 <div class="toasts" id="toasts"></div>
+<script src="../learn/predict.js"></script>
 <script>
 (() => {
 'use strict';
@@ -1320,8 +1322,32 @@ function loadLearned() {
   return LEARN.loading;
 }
 function loadModelBase() { return Promise.all([loadModelBaseRaw(), loadLearned()]).then(([b]) => b); }
-function learnedParts(homeId, awayId, date, neutral) {
+/* Learned model v2 (learn/predict.js): one shared model for the trainer, the hourly record and this page.
+   Falls back to the version-1 model file until the first v2 training run has been published. */
+const SMX = () => (typeof window !== 'undefined' && window.SidelineModel) || null;
+const isV2 = M => !!(M && M.version >= 2 && SMX());
+function v2Inputs(M, homeId, awayId, opt) {
+  const sp = SPORTX.id, inj = (opt.base && opt.base.injuries) || {}, SM = SMX(), inp = {};
+  if (sp === 'nba') {
+    const outs = id => (inj[String(id)] || []).filter(i => i.id && SM.SIT(i.status) > 0).map(i => ({ id: String(i.id), sit: SM.SIT(i.status), name: i.name }));
+    inp.outH = outs(homeId); inp.outA = outs(awayId);
+  } else if (sp === 'nhl') { if (opt.spH?.id) inp.gH = String(opt.spH.id); if (opt.spA?.id) inp.gA = String(opt.spA.id); }
+  else if (sp === 'mlb') { if (opt.spH?.id) inp.spH = String(opt.spH.id); if (opt.spA?.id) inp.spA = String(opt.spA.id); }
+  else if (sp === 'nfl') {
+    const qbOut = id => { const T = M.teams[String(id)], q = T && T.qb; return q && (inj[String(id)] || []).some(i => String(i.id) === String(q) && SM.SIT(i.status) >= .8); };
+    if (qbOut(homeId)) inp.qbH = null; if (qbOut(awayId)) inp.qbA = null;
+  }
+  return inp;
+}
+function learnedParts(homeId, awayId, date, neutral, opt = {}) {
   const M = LEARN.model; if (!M || M.games < 50) return null;
+  if (isV2(M)) {
+    const inputs = v2Inputs(M, homeId, awayId, opt);
+    const r = SMX().predictUS(M, homeId, awayId, { date: date ? new Date(date) : new Date(), neutral, inputs }); if (!r) return null;
+    const P = r.parts;
+    return { v2: true, home: P.home || 0, rating: (P.elo || 0) + (P.margin || 0) + (P.net || 0) + (P.shots || 0) + (P.ypp || 0), form: P.form || 0, rest: P.rest || 0,
+      avail: P.avail, goalie: P.goalie, sp: P.sp, qb: P.qb, inputs, sigma: M.sigma, n: M.games };
+  }
   const H = M.teams[String(homeId)], A = M.teams[String(awayId)]; if (!H || !A) return null;
   const when = date ? new Date(date) : new Date();
   const tf = t => ({ elo: t.elo, mShr: t.msum / (t.gp + 4), l10: t.last?.length ? t.last.reduce((s, v) => s + v, 0) / t.last.length : 0,
@@ -1332,24 +1358,42 @@ function learnedParts(homeId, awayId, date, neutral) {
 }
 function applyLearned(pr, awayId, homeId, opt = {}) {
   if (!pr || !pr.factors) return pr;
-  const L = learnedParts(homeId, awayId, opt.date, !!opt.neutral); if (!L) return pr;
+  const L = learnedParts(homeId, awayId, opt.date, !!opt.neutral, opt); if (!L) return pr;
   const homeK = pr.factors.find(f => /^Home/.test(f.k))?.k || 'Home';
-  const keep = pr.factors.filter(f => !/^(Ratings matchup|Home|Recent form|Rest)/.test(f.k));
+  const sp = SPORTX.id, A = pr.A, H = pr.H;
+  const replaced = !L.v2 ? /^(Ratings matchup|Home|Recent form|Rest)/ : sp === 'nba' ? /^(Ratings matchup|Home|Recent form|Rest|Injuries)/ : sp === 'mlb' ? /^(Ratings matchup|Home|Recent form|Rest|Starting pitchers)/ : sp === 'nhl' ? /^(Ratings matchup|Home|Recent form|Rest|Starting goalies)/ : /^(Ratings matchup|Home|Recent form|Rest)/;
+  let keep = pr.factors.filter(f => !replaced.test(f.k));
+  if (L.v2 && sp === 'nfl') {                     // the quarterback is now in the model: take QBs out of the injury adjustment
+    const inj = (opt.base && opt.base.injuries) || {}, qbImp = id => (inj[String(id)] || []).filter(i => i.pos === 'QB').reduce((s, i) => s + (i.impact || 0), 0);
+    const dq = qbImp(awayId) - qbImp(homeId);
+    keep = keep.map(f => /^Injuries/.test(f.k) ? { ...f, v: f.v - dq } : f);
+  }
+  const extra = [];
+  if (L.v2) {
+    const nm = (o, abbr) => o?.name ? `${abbr}: ${o.name}` : '';
+    if (sp === 'nba') { const miss = l => (l || []).filter(o => o.sit >= .4).map(o => o.name).slice(0, 3).join(', '); const mA = miss(L.inputs.outA), mH = miss(L.inputs.outH);
+      extra.push({ k: 'Player availability', v: L.avail || 0, note: [mA && `${A.abbr} without ${mA}`, mH && `${H.abbr} without ${mH}`].filter(Boolean).join(' · ') || 'full strength · learned from who actually played' }); }
+    if (sp === 'nhl') extra.push({ k: 'Starting goalies', v: L.goalie || 0, note: [nm(opt.spA, A.abbr), nm(opt.spH, H.abbr)].filter(Boolean).join(' · ') || 'expected starters · goals saved above average, learned' });
+    if (sp === 'mlb') extra.push({ k: 'Starting pitchers', v: L.sp || 0, note: [nm(opt.spA, A.abbr), nm(opt.spH, H.abbr)].filter(Boolean).join(' · ') || 'starters not announced' });
+    if (sp === 'nfl') extra.push({ k: 'Quarterbacks', v: L.qb || 0, note: `expected starters${L.inputs.qbH === null ? ` · ${H.abbr} QB out` : ''}${L.inputs.qbA === null ? ` · ${A.abbr} QB out` : ''} · adjusted yards per attempt, learned` });
+  }
   const factors = [
-    { k: 'Learned ratings', v: L.rating, note: `Elo and scoring margin, learned from ${L.n.toLocaleString()} games` },
-    { k: homeK, v: opt.neutral ? 0 : L.home, note: opt.neutral ? 'neutral site' : `${pr.H.abbr} at home · learned edge` },
+    { k: 'Learned ratings', v: L.rating, note: L.v2 ? `Elo, margin and ${sp === 'nba' ? 'pace-adjusted efficiency' : sp === 'nhl' ? 'shot differential' : sp === 'nfl' ? 'yards per play' : 'run differential'} · learned from ${L.n.toLocaleString()} games` : `Elo and scoring margin, learned from ${L.n.toLocaleString()} games` },
+    { k: homeK, v: opt.neutral ? 0 : L.home, note: opt.neutral ? 'neutral site' : `${H.abbr} at home · learned edge` },
     { k: 'Recent form', v: L.form, note: 'last 10 games · learned weight' },
     ...(LEARN.model.rest ? [{ k: 'Rest', v: L.rest, note: 'days off before the game · learned weight' }] : []),
+    ...extra,
     ...keep
   ];
   const margin = factors.reduce((s, f) => s + f.v, 0), pH = Phi(margin / (L.sigma || 1));
   return { ...pr, factors, margin, pH, pA: 1 - pH, ptsH: pr.total / 2 + margin / 2, ptsA: pr.total / 2 - margin / 2, learned: true };
 }
-function predict(base, awayId, homeId, opt = {}) { return applyLearned(predictRaw(base, awayId, homeId, opt), awayId, homeId, opt); }
+function predict(base, awayId, homeId, opt = {}) { return applyLearned(predictRaw(base, awayId, homeId, opt), awayId, homeId, { ...opt, base }); }
 const lgt = p => { p = Math.min(.99, Math.max(.01, p)); return Math.log(p / (1 - p)); };
-function blendProb(pm, pmk) {
+function blendProb(pm, pmk, pOpen) {
   if (pmk == null) return pm;
-  const B = LEARN.model?.blend;
+  const M = LEARN.model, B = M?.blend;
+  if (isV2(M)) return SMX().blend2(B ? { a: B.a, wm: B.wm, wk: B.wk, wv: B.wv } : null, pm, pmk, pOpen);
   return B ? 1 / (1 + Math.exp(-(B.a + B.wModel * lgt(pm) + B.wMarket * lgt(pmk)))) : (pm + pmk) / 2;
 }
 const learnAge = () => LEARN.model?.updated ? (Date.now() - new Date(LEARN.model.updated)) / 36e5 : null;
@@ -1359,7 +1403,9 @@ function learnedNote() {
   const M = LEARN.model;
   if (!M) return `<div class="learnbox"><b>🧠 Learning model</b><span>Not published yet. Until its first nightly run, predictions use this season’s stats only.</span></div>`;
   const E = M.eval || {}, s = E.season?.n >= 30 ? E.season : E.all || {};
-  return `${staleNote()}<div class="learnbox"><b>🧠 Learning model</b><span>Learned from ${M.games.toLocaleString()} games and retrained every night. It replaces the ratings, home edge, form${M.rest ? ' and rest' : ''} above with weights fit to real results; injuries${/mlb|nhl/.test(SPORTX.id) ? ' and starters' : ''} still adjust on top.</span>
+  const inModel = { nba: 'player availability', nhl: 'starting goalies', mlb: 'starting pitchers', nfl: 'quarterbacks' }[SPORTX.id];
+  const onTop = { nba: '', nhl: 'Other injuries still adjust on top.', mlb: 'Other injuries still adjust on top.', nfl: 'Other injuries still adjust on top.' }[SPORTX.id];
+  return `${staleNote()}<div class="learnbox"><b>🧠 Learning model</b><span>${isV2(M) ? `Learned from ${M.games.toLocaleString()} games over ${(M.seasons || []).length} seasons and retrained twice a day. Ratings, home edge, form${M.rest ? ', rest' : ''} and ${inModel} are weighted by what predicted best on games it hadn’t seen. ${onTop}` : `Learned from ${M.games.toLocaleString()} games and retrained every night. It replaces the ratings, home edge, form${M.rest ? ' and rest' : ''} above with weights fit to real results; injuries${/mlb|nhl/.test(SPORTX.id) ? ' and starters' : ''} still adjust on top.`}</span>
     <span>Picks the winner <b>${pctS(s.acc)}</b> of the time${E.season?.n >= 30 ? ' this season' : ''} on games it hadn’t seen yet (home team every time: ${pctS(s.homeAcc)})${E.last30?.n >= 20 ? ` · last 30 days ${pctS(E.last30.acc)}` : ''}.</span>
     <span class="sub">Updated ${esc(new Date(M.updated).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }))}</span></div>`;
 }
@@ -1368,14 +1414,24 @@ function modelCard() {
   const E = M.eval || {}, months = (E.months || []).filter(m => m.n >= 10).slice(-12), w = M.w || [];
   const lo = .4, hi = .8, h = v => Math.max(4, Math.min(100, (v - lo) / (hi - lo) * 100));
   const base = E.all?.homeAcc;
-  const U = INS.unit, d = INS.d;
-  const learned = [`home edge ${fxd(w[0], d)} ${U}`, `100 Elo points ${fxd(w[1], d)} ${U}`, `1 ${U.replace(/s$/, '')} of season margin per game ${fxd(w[2], 2)}`, `1 ${U.replace(/s$/, '')} of last-10 margin ${fxd(w[3], 2)}`, ...(M.rest ? [`1 extra day of rest ${fxd(w[4], d)} ${U}`] : [])];
-  return `<div class="panel glass" style="margin-bottom:16px">${panelHead('Prediction model report card', 'every game predicted before it was played, then graded · retrained nightly', IC.wp)}${staleNote()}
+  const U = INS.unit, d = INS.d, u1 = U.replace(/s$/, '');
+  const LBL = { home: `home edge`, elo: `100 Elo points`, margin: `1 ${u1} of season margin per game`, form: `1 ${u1} of last-10 margin`, rest: `1 extra day of rest`,
+    net: `1 point per 100 possessions of net rating`, avail: `1 game-score point of missing rotation players`, shots: `1 shot per game of shot differential`, goalie: `1 goal saved per 30 shots by the starting goalie`,
+    sp: `1 run saved per start by the starting pitcher`, ypp: `1 yard per play of margin`, qb: `1 adjusted net yard per attempt from the quarterback` };
+  const feats = M.features || ['home', 'elo', 'margin', 'form', 'rest'];
+  const learned = feats.map((f, i) => (f === 'rest' && !M.rest) ? null : `${LBL[f] || f} ${fxd(w[i], f === 'margin' || f === 'form' ? 2 : d)} ${U}`).filter(Boolean);
+  const C = M.compare, ho = C?.holdout;
+  const cmp = C && C.old && C.new ? `<div class="sublabel">Upgrade check · same games, predicted before they were played</div>
+    <div class="mc-tiles"><div><b>${pctS(C.new.acc)}</b><span>Right · current model</span></div><div><b>${pctS(C.old.acc)}</b><span>Right · previous model</span></div>
+      <div><b>${C.new.logloss?.toFixed(3) ?? '—'}</b><span>Log loss · current (lower is better)</span></div><div><b>${C.old.logloss?.toFixed(3) ?? '—'}</b><span>Log loss · previous</span></div>
+      ${ho ? `<div><b>${ho.model.logloss.toFixed(3)} / ${ho.market.logloss.toFixed(3)}</b><span>Model vs DraftKings log loss (${ho.n} recent games)</span></div><div><b>${ho.blend.logloss.toFixed(3)}</b><span>Model + market mix</span></div>` : ''}</div>` : '';
+  return `<div class="panel glass" style="margin-bottom:16px">${panelHead('Prediction model report card', 'every game predicted before it was played, then graded · retrained twice a day', IC.wp)}${staleNote()}
     <div class="mc-tiles"><div><b>${M.games.toLocaleString()}</b><span>Games learned from</span></div><div><b>${pctS(E.season?.acc ?? E.all?.acc)}</b><span>Right${E.season?.n ? ' this season' : ''}</span></div>
       <div><b>${pctS(E.last30?.acc)}</b><span>Last 30 days</span></div><div><b>${E.all?.brier != null ? E.all.brier.toFixed(3) : '—'}</b><span>Brier score (lower is better)</span></div>
       <div><b>${pctS(base)}</b><span>Home team every time</span></div>${M.blend ? `<div><b>${pctS(M.blend.accBlend)}</b><span>Model + market mix (${M.blend.n} games)</span></div>` : ''}</div>
+    ${cmp}
     ${months.length ? `<div class="sublabel">Accuracy by month</div><div class="mc-bars">${months.map(m => `<div title="${m.n} games · Brier ${m.brier}"><em>${Math.round(m.acc * 100)}%</em><i style="height:${h(m.acc)}%"></i><small>${esc(new Date(+m.m.slice(0, 4), +m.m.slice(5, 7) - 1, 15).toLocaleDateString([], { month: 'short' }))}</small></div>`).join('')}</div>` : ''}
-    <p class="note" style="margin-top:10px">What it has learned each factor is worth: ${learned.map(esc).join(' · ')}. It uses ${(M.seasons || []).length} season${(M.seasons || []).length === 1 ? '' : 's'} of results, refits its weights every night and gets sharper as games pile up.${M.blend ? ` It has also learned how much to trust the betting market: ${M.blend.wMarket > M.blend.wModel ? 'the market has earned more weight so far' : 'its own ratings have earned more weight so far'}.` : ''}</p></div>`;
+    <p class="note" style="margin-top:10px">What it has learned each factor is worth: ${learned.map(esc).join(' · ')}. It uses ${(M.seasons || []).length} season${(M.seasons || []).length === 1 ? '' : 's'} of results${M.params ? ', tunes its own settings to whatever predicted best' : ''} and gets sharper as games pile up.${M.blend ? ` It has also learned how much to trust the betting market${M.blend.wv ? ' and its line moves' : ''}: ${M.blend.wk > M.blend.wm ? 'the market has earned more weight so far' : 'its own ratings have earned more weight so far'}.` : ''}</p></div>`;
 }
 
 /* ---------- featured game: the one the betting market is moving most ---------- */
@@ -3143,8 +3199,9 @@ async function computeBestRaw() {
       const pr = predict(base, away.team?.id, home.team?.id, { neutral: !!ev.competitions?.[0]?.neutralSite, formA: MODEL.sched[String(away.team?.id)], formH: MODEL.sched[String(home.team?.id)], ...evProbables(ev) });
       if (!pr) return;
       const o = oddsForEvent(ev);
-      [['home', home, pr.pH, o?.fairH, o?.mlH], ['away', away, pr.pA, o?.fairA, o?.mlA]].forEach(([side, t, pm, pmk, ml]) => {
-        const blend = blendProb(pm, pmk);
+      const fo = o && o.mlHo != null && o.mlAo != null ? implied(o.mlHo) / (implied(o.mlHo) + implied(o.mlAo)) : null;
+      [['home', home, pr.pH, o?.fairH, o?.mlH, fo], ['away', away, pr.pA, o?.fairA, o?.mlA, fo == null ? null : 1 - fo]].forEach(([side, t, pm, pmk, ml, po]) => {
+        const blend = blendProb(pm, pmk, po);
         cands.push({ ev, side, team: t.team, opp: (side === 'home' ? away : home).team, model: pm, market: pmk ?? null, p: blend, ml: ml ?? null, pr });
       });
     });
@@ -3687,6 +3744,13 @@ function predLiveSection(d, home, away, st, ev) {
 const PARKEY = `sideline.${SPORTX.id}.parlays.v1`;
 const PARLAYS = store.get(PARKEY, {});          // day key -> { key, legs: [up to 4, best first], savedAt }
 const saveParlays = () => { const ks = Object.keys(PARLAYS).sort(); ks.slice(0, Math.max(0, ks.length - 120)).forEach(k => delete PARLAYS[k]); store.set(PARKEY, PARLAYS); };
+const VPARKEY = `sideline.${SPORTX.id}.vparlays.v1`;
+const VPARLAYS = store.get(VPARKEY, {});         // the 'Best value' parlays: biggest edges over DraftKings' fair price
+const saveVParlays = () => { const ks = Object.keys(VPARLAYS).sort(); ks.slice(0, Math.max(0, ks.length - 120)).forEach(k => delete VPARLAYS[k]); store.set(VPARKEY, VPARLAYS); };
+state.parMode = store.get(`sideline.${SPORTX.id}.parmode`, 'likely');
+const PST = () => state.parMode === 'value' ? VPARLAYS : PARLAYS;
+const savePST = () => state.parMode === 'value' ? saveVParlays() : saveParlays();
+const VALUE_MIN = .01;
 const slimT2 = t => t ? { id: String(t.id ?? ''), abbreviation: t.abbreviation || '', shortDisplayName: t.shortDisplayName || t.displayName || t.abbreviation || '', logo: t.logo || t.logos?.[0]?.href || '' } : null;
 function gradeLeg(leg, comps, done) {
   if (!leg || leg.result || !done) return false;
@@ -3703,18 +3767,18 @@ async function gradeParlays() {
   let ch = false;
   try {
     const evs = [...(state.events || []), ...(state.todayEvents || [])];
-    const open = Object.values(PARLAYS).flatMap(P => P.legs.filter(l => !l.result));
+    const open = [...Object.values(PARLAYS), ...Object.values(VPARLAYS)].flatMap(P => P.legs.filter(l => !l.result));
     open.forEach(l => { const ev = evs.find(e => String(e.id) === l.evId); if (ev && statusOf(ev).state === 'post' && gradeLeg(l, ev.competitions?.[0]?.competitors || [], true)) ch = true; });
     const due = open.filter(l => !l.result && Date.now() - new Date(l.date) > 3 * 3600e3).slice(0, 12);
     await pool(due, 4, async l => { const sm = await safe(cached(`${API}/summary?event=${l.evId}`, 3e5)); const hc = sm?.header?.competitions?.[0]; if (hc && gradeLeg(l, hc.competitors || [], !!hc.status?.type?.completed)) ch = true; });
-    if (ch) saveParlays();
+    if (ch) { saveParlays(); saveVParlays(); }
   } finally { parGradeBusy = false; }
   return ch;
 }
 function parlayOutcome(legs) { if (legs.some(l => l.result === 'L')) return 'L'; if (legs.length && legs.every(l => l.result === 'W')) return 'W'; return null; }
 function parlayRecord(n) {
-  const done = Object.values(PARLAYS).filter(P => P.legs.length >= n).map(P => ({ P, r: parlayOutcome(P.legs.slice(0, n)) })).filter(x => x.r);
-  const legs = Object.values(PARLAYS).flatMap(P => P.legs.slice(0, n)).filter(l => l.result);
+  const done = Object.values(PST()).filter(P => P.legs.length >= n).map(P => ({ P, r: parlayOutcome(P.legs.slice(0, n)) })).filter(x => x.r);
+  const legs = Object.values(PST()).flatMap(P => P.legs.slice(0, n)).filter(l => l.result);
   return { w: done.filter(x => x.r === 'W').length, n: done.length, lw: legs.filter(l => l.result === 'W').length, ln: legs.length };
 }
 const legChip = (l, ev) => l.result === 'W' ? '<span class="chip win">✓ Won</span>' : l.result === 'L' ? '<span class="chip loss">✗ Lost</span>' : ev && statusOf(ev).state === 'in' ? '<span class="chip live"><i></i>Live</span>' : '';
@@ -3728,26 +3792,28 @@ async function renderParlay() {
   }
   const n = state.parlayN || 3, B = state.best;
   const uniq = [];
-  (B.cands || []).filter(c => c.ml != null && statusOf(c.ev).state === 'pre').sort((a, b) => b.p - a.p).forEach(c => { if (!uniq.some(u => u.ev.id === c.ev.id)) uniq.push(c); });
+  const VAL = state.parMode === 'value', edge = c => c.p - c.market;
+  (B.cands || []).filter(c => c.ml != null && statusOf(c.ev).state === 'pre' && (!VAL || (c.market != null && edge(c) > VALUE_MIN))).sort((a, b) => VAL ? edge(b) - edge(a) : b.p - a.p).forEach(c => { if (!uniq.some(u => u.ev.id === c.ev.id)) uniq.push(c); });
   const top4 = uniq.slice(0, 4);
   if (top4.length >= 2) {
-    const key = ymd(new Date(top4[0].ev.date)), cur = PARLAYS[key];
+    const key = ymd(new Date(top4[0].ev.date)), cur = PST()[key];
     const locked = cur && cur.legs.some(l => l.result || new Date(l.date) <= new Date());
-    if (!locked) { PARLAYS[key] = { key, savedAt: Date.now(), legs: top4.map(c => ({ evId: String(c.ev.id), date: c.ev.date, side: c.side, team: slimT2(c.team), opp: slimT2(c.opp), p: c.p, ml: c.ml, result: null })) }; saveParlays(); }
+    if (!locked) { PST()[key] = { key, savedAt: Date.now(), legs: top4.map(c => ({ evId: String(c.ev.id), date: c.ev.date, side: c.side, team: slimT2(c.team), opp: slimT2(c.opp), p: c.p, market: c.market ?? null, ml: c.ml, result: null })) }; savePST(); }
   }
   if (await gradeParlays() && state.tab !== 'picks') return;
-  const curKey = top4.length ? ymd(new Date(top4[0].ev.date)) : null, saved = curKey ? PARLAYS[curKey] : null;
+  const curKey = top4.length ? ymd(new Date(top4[0].ev.date)) : null, saved = curKey ? PST()[curKey] : null;
   const legs = uniq.slice(0, n);
   const seg = `<div class="seg" id="parN">${[2, 3, 4].map(k => `<button data-n="${k}" class="${k === n ? 'on' : ''}" ${uniq.length < k ? 'disabled' : ''}>${k} legs</button>`).join('')}</div>`;
-  const head = `<div class="ph"><span class="pic">🎟️</span><h3>Suggested parlay</h3><span class="sub">${esc(B.when === 'tomorrow' ? 'tomorrow’s' : 'today’s')} ${SPORTX.unit === 'week' ? 'slate' : 'games'} · the ${n} picks our model likes most</span><span class="spacer"></span>${seg}</div>`;
-  if (legs.length < 2) { box.innerHTML = `<div class="panel glass parlay">${head}<p class="muted" style="margin:0">Not enough upcoming games with DraftKings lines to build a parlay right now. Check back closer to game time.</p>${parlayHistory(n, null)}</div>`; bindParlay(); return; }
+  const modeSeg = `<div class="seg parmode" id="parMode"><button data-m="likely" class="${VAL ? '' : 'on'}">Most likely</button><button data-m="value" class="${VAL ? 'on' : ''}">Best value</button></div>`;
+  const head = `<div class="ph"><span class="pic">🎟️</span><h3>Suggested parlay</h3><span class="sub">${esc(B.when === 'tomorrow' ? 'tomorrow’s' : 'today’s')} ${SPORTX.unit === 'week' ? 'slate' : 'games'} · ${VAL ? `the ${n} biggest edges over DraftKings` : `the ${n} picks our model likes most`}</span><span class="spacer"></span>${modeSeg}${seg}</div>`;
+  if (legs.length < 2) { box.innerHTML = `<div class="panel glass parlay">${head}<p class="muted" style="margin:0">${VAL ? 'Fewer than two games where our numbers beat DraftKings’ fair price right now. Check back closer to game time, or switch to Most likely.' : 'Not enough upcoming games with DraftKings lines to build a parlay right now. Check back closer to game time.'}</p>${parlayHistory(n, null)}</div>`; bindParlay(); return; }
   const dec = legs.reduce((s, c) => s * decOdds(c.ml), 1), am = amFromDec(dec);
   const pModel = legs.reduce((s, c) => s * c.p, 1), pBook = 1 / dec;
   const pFair = legs.every(c => c.market != null) ? legs.reduce((s, c) => s * c.market, 1) : null;
   const ev = pModel * dec - 1;
   const tracked = legs.every(c => String(PICKS[c.ev.id]?.pick) === String(c.team?.id));
   box.innerHTML = `<div class="panel glass parlay">${head}
-    <div class="plegs">${legs.map((c, i) => `<div class="pleg" data-ev="${esc(c.ev.id)}"><span class="pn">${i + 1}</span>${logoImg(c.team)}<div class="pt"><b>${esc(c.team?.shortDisplayName || c.team?.displayName || c.team?.abbreviation)} to win</b><span>${c.side === 'home' ? 'vs' : '@'} ${esc(c.opp?.abbreviation || '')} · ${esc(startTime(c.ev))}</span></div><div class="pp"><b>${Math.round(c.p * 100)}%</b><span>model + market</span></div><div class="pp"><b>${esc(fmtAm(c.ml))}</b><span>DraftKings</span></div>${(() => { const l = saved?.legs.find(x => x.evId === String(c.ev.id)); return l ? `<div class="pres">${legChip(l, c.ev)}</div>` : ''; })()}</div>`).join('')}</div>
+    <div class="plegs">${legs.map((c, i) => `<div class="pleg" data-ev="${esc(c.ev.id)}"><span class="pn">${i + 1}</span>${logoImg(c.team)}<div class="pt"><b>${esc(c.team?.shortDisplayName || c.team?.displayName || c.team?.abbreviation)} to win</b><span>${c.side === 'home' ? 'vs' : '@'} ${esc(c.opp?.abbreviation || '')} · ${esc(startTime(c.ev))}</span></div><div class="pp"><b>${Math.round(c.p * 100)}%</b><span>${VAL && c.market != null ? `+${((c.p - c.market) * 100).toFixed(1)} vs DK ${Math.round(c.market * 100)}%` : 'model + market'}</span></div><div class="pp"><b>${esc(fmtAm(c.ml))}</b><span>DraftKings</span></div>${(() => { const l = saved?.legs.find(x => x.evId === String(c.ev.id)); return l ? `<div class="pres">${legChip(l, c.ev)}</div>` : ''; })()}</div>`).join('')}</div>
     <div class="ptot">
       <div><b>${esc(fmtAm(am))}</b><span>Parlay odds</span></div>
       <div><b>$${(10 * dec).toFixed(2)}</b><span>$10 pays</span></div>
@@ -3757,15 +3823,15 @@ async function renderParlay() {
     </div>
     ${parlayHistory(n, curKey)}
     <div class="pfoot"><button class="pillbtn ${tracked ? 'glass' : 'accbtn'} sm" id="parTrack" ${tracked ? 'disabled' : ''}>${tracked ? '✓ All legs in your picks' : 'Add these to my picks'}</button>
-      <span class="muted">Each leg is the side with the highest win chance from our model blended with DraftKings (margin removed). The combined chance multiplies the legs as if they were independent${pFair != null ? `; DraftKings’ own fair chance is ${Math.round(pFair * 100)}% before its margin` : ''}. More legs pay more but miss more often. For fun only · 21+ · 1-800-GAMBLER</span></div></div>`;
+      <span class="muted">${VAL ? 'Each leg is the side where our blended win chance beats DraftKings’ fair chance (margin removed) by the most — often an underdog, so these hit less often but pay more. A positive edge is our estimate, not a sure thing.' : 'Each leg is the side with the highest win chance from our model blended with DraftKings (margin removed).'} The combined chance multiplies the legs as if they were independent${pFair != null ? `; DraftKings’ own fair chance is ${Math.round(pFair * 100)}% before its margin` : ''}. More legs pay more but miss more often. For fun only · 21+ · 1-800-GAMBLER</span></div></div>`;
   bindParlay();
   $$('#parlayBox .pleg').forEach(r => r.onclick = () => openGame(r.dataset.ev));
   const tb = $('#parTrack'); if (tb) tb.onclick = () => { legs.forEach(c => { if (String(PICKS[c.ev.id]?.pick) !== String(c.team?.id)) makePick(c.ev, c.team?.id); }); renderParlay(); if (typeof renderPicks === 'function') renderPicks(); updateCounts(); };
 }
-function bindParlay() { $$('#parN button').forEach(b => b.onclick = () => { if (b.disabled) return; state.parlayN = +b.dataset.n; renderParlay(); }); }
+function bindParlay() { $$('#parN button').forEach(b => b.onclick = () => { if (b.disabled) return; state.parlayN = +b.dataset.n; renderParlay(); }); $$('#parMode button').forEach(b => b.onclick = () => { state.parMode = b.dataset.m; store.set(`sideline.${SPORTX.id}.parmode`, state.parMode); renderParlay(); }); }
 
 function parlayHistory(n, curKey) {
-  const past = Object.values(PARLAYS).filter(P => P.key !== curKey && P.legs.length >= Math.min(n, 2)).sort((a, b) => b.key.localeCompare(a.key)).slice(0, 10);
+  const past = Object.values(PST()).filter(P => P.key !== curKey && P.legs.length >= Math.min(n, 2)).sort((a, b) => b.key.localeCompare(a.key)).slice(0, 10);
   if (!past.length) return '<div class="sublabel">Past parlays</div><p class="muted" style="margin:0">Each day’s suggested parlay is recorded here every hour until the first game starts, then graded leg by leg.</p>';
   const R = parlayRecord(n);
   const rows = past.map(P => {
@@ -3775,7 +3841,7 @@ function parlayHistory(n, curKey) {
       <span class="hl">${L.map(l => `<span class="hleg ${l.result === 'W' ? 'w' : l.result === 'L' ? 'l' : ''}" title="${esc((l.team?.shortDisplayName || '') + ' to win' + (l.final ? ' · ' + l.final : ''))}">${logoImg(l.team)}${esc(l.team?.abbreviation || '')}${l.result === 'W' ? ' ✓' : l.result === 'L' ? ' ✗' : ''}</span>`).join('')}</span>
       <span class="po">${esc(fmtAm(amFromDec(dec)))}</span>${out === 'W' ? '<span class="chip win">✓ Hit</span>' : out === 'L' ? `<span class="chip loss">✗ ${L.filter(l => l.result === 'W').length}/${L.length}</span>` : '<span class="chip pre">Pending</span>'}</div>`;
   }).join('');
-  return `<div class="sublabel">Past parlays${R.n ? ` · ${n}-leg record <b style="color:var(--text)">${R.w}–${R.n - R.w}</b> · legs won ${R.ln ? Math.round(R.lw / R.ln * 100) : 0}% (${R.lw}/${R.ln})` : ''}</div><div class="phists">${rows}</div>`;
+  return `<div class="sublabel">Past ${state.parMode === 'value' ? 'value ' : ''}parlays${R.n ? ` · ${n}-leg record <b style="color:var(--text)">${R.w}–${R.n - R.w}</b> · legs won ${R.ln ? Math.round(R.lw / R.ln * 100) : 0}% (${R.lw}/${R.ln})` : ''}</div><div class="phists">${rows}</div>`;
 }
 
 /* =====================================================================
@@ -3888,7 +3954,14 @@ function mergeLedger(L) {
       if (JSON.stringify(cur) !== JSON.stringify(nx)) { PARLAYS[k] = nx; ch++; }
     }
   });
-  if (ch) { saveMPicks(); saveDayPicks(); saveParlays(); }
+  Object.entries(L.vparlays || {}).forEach(([k, P]) => {
+    const cur = VPARLAYS[k];
+    if (!cur || P.legs.some(ledgerLocked) || cur.legs.some(ledgerLocked)) {
+      const nx = { ...P, legs: P.legs.map(l => { const c = cur?.legs.find(x => x.evId === l.evId); return c && c.result && !l.result ? { ...l, result: c.result, final: c.final } : { ...l }; }) };
+      if (JSON.stringify(cur) !== JSON.stringify(nx)) { VPARLAYS[k] = nx; ch++; }
+    }
+  });
+  if (ch) { saveMPicks(); saveDayPicks(); saveParlays(); saveVParlays(); }
   return ch > 0;
 }
 async function loadLedger(force) {
