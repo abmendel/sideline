@@ -17,37 +17,27 @@ jobs:
           mkdir -p s
           S=https://site.api.espn.com/apis/site/v2/sports/soccer
           W=https://site.web.api.espn.com/apis/common/v3/sports/soccer
-          g(){ curl -sL -m 30 -A 'Mozilla/5.0' "$2" -o "s/$1.json"; echo "$1 $(wc -c < s/$1.json) $2" >> s/_index.txt; }
-          g dropdown "https://site.api.espn.com/apis/site/v2/leagues/dropdown?sport=soccer&limit=300"
-          g sb_today "$S/eng.1/scoreboard"
-          g sb_range "$S/eng.1/scoreboard?dates=20261101-20261112&limit=100"
-          g sb_all "$S/all/scoreboard"
-          g sb_ucl "$S/uefa.champions/scoreboard?dates=20261020-20261112&limit=100"
-          g sb_wc "$S/fifa.world/scoreboard?dates=20260711-20260720"
-          EV=$(python3 -c "import json;d=json.load(open('s/sb_range.json'));e=[x for x in d.get('events',[]) if x['status']['type'].get('completed')];print(e[0]['id'] if e else '')")
-          echo "event $EV" >> s/_index.txt
-          g summary "$S/eng.1/summary?event=$EV"
-          PRE=$(python3 -c "import json;d=json.load(open('s/sb_today.json'));e=[x for x in d.get('events',[]) if x['status']['type']['state']=='pre'];print(e[0]['id'] if e else '')")
-          [ -n "$PRE" ] && g summary_pre "$S/eng.1/summary?event=$PRE"
-          g teams "$S/eng.1/teams"
-          TID=$(python3 -c "import json;d=json.load(open('s/teams.json'));print(d['sports'][0]['leagues'][0]['teams'][0]['team']['id'])")
-          echo "team $TID" >> s/_index.txt
-          g team "$S/eng.1/teams/$TID"
-          g roster "$S/eng.1/teams/$TID/roster"
-          g schedule "$S/eng.1/teams/$TID/schedule"
-          g team_stats "$S/eng.1/teams/$TID/statistics"
-          g standings "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings"
-          g standings_ucl "https://site.api.espn.com/apis/v2/sports/soccer/uefa.champions/standings"
-          g standings_wc "https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026"
-          g standings_mls "https://site.api.espn.com/apis/v2/sports/soccer/usa.1/standings"
-          g news "$S/eng.1/news?limit=5"
-          g stats_ath "$W/eng.1/statistics/byathlete?region=us&lang=en&contentorigin=espn&isqualified=true&page=1&limit=5"
-          g stats_team "$W/eng.1/statistics/byteam?region=us&lang=en&contentorigin=espn&limit=40"
-          AID=$(python3 -c "import json;d=json.load(open('s/roster.json'));print(d['athletes'][0]['id'])" 2>/dev/null)
-          g ath_overview "$W/eng.1/athletes/$AID/overview"
-          g ath_gamelog "$W/eng.1/athletes/$AID/gamelog"
-          g leaders "https://site.web.api.espn.com/apis/site/v3/sports/soccer/eng.1/leaders"
-          g core_leaders "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders?limit=10"
+          g(){ curl -sL --compressed -m 30 -A 'Mozilla/5.0' "$2" -o "s/$1.json"; echo "$1 $(wc -c < s/$1.json) $2" >> s/_index.txt; }
+          rm -f s/*.json s/_index.txt
+          g sb_next "$S/eng.1/scoreboard?dates=20261121-20261123&limit=100"
+          g sb_range "$S/eng.1/scoreboard?dates=20261101-20261109&limit=100"
+          g sb_ucl "$S/uefa.champions/scoreboard?dates=20261103-20261106&limit=100"
+          g sb_wc "$S/fifa.world/scoreboard?dates=20260711-20260720&limit=100"
+          g summary "$S/eng.1/summary?event=401879240"
+          g summary_ucl "$S/uefa.champions/summary?event=$(python3 -c "import json;d=json.load(open('s/sb_ucl.json'));print(d['events'][0]['id'])")"
+          PRE=$(python3 -c "import json;d=json.load(open('s/sb_next.json'));print(d['events'][0]['id'])")
+          g summary_pre "$S/eng.1/summary?event=$PRE"
+          g core_leaders50 "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders?limit=50"
+          g core_athlete "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/athletes/253989?lang=en&region=us"
+          g core_ath_stats "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/athletes/253989/statistics"
+          g core_team_stats "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/teams/359/statistics"
+          g web_roster "https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/359/roster"
+          g roster_stats "$S/eng.1/teams/359/roster?enable=stats"
+          g web_team "https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/teams/359"
+          g ath_stats "$W/eng.1/athletes/253989/stats"
+          g ath_splits "$W/eng.1/athletes/253989/splits"
+          for u in "$S/eng.1/teams" "$W/eng.1/athletes/253989/overview" "https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders" "https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings"; do
+            echo "CORS $u" >> s/_index.txt; curl -sI --compressed -m 20 -H 'Origin: https://abmendel.github.io' "$u" | grep -i 'access-control\|^HTTP' >> s/_index.txt; done
           cat s/_index.txt
       - name: Commit
         run: |
