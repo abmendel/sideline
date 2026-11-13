@@ -1,25 +1,31 @@
-dropdown 581696 https://site.api.espn.com/apis/site/v2/leagues/dropdown?sport=soccer&limit=300
-sb_today 66357 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard
-sb_range 80 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261101-20261112&limit=100
-sb_all 712982 https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard
-sb_ucl 80 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard?dates=20261020-20261112&limit=100
-sb_wc 80 https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260711-20260720
-event 
-summary 196 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=
-teams 24939 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams
-team 349
-team 20976 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/349
-roster 209261 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/349/roster
-schedule 94939 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/349/schedule
-team_stats 613 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/349/statistics
-standings 68898 https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings
-standings_ucl 143540 https://site.api.espn.com/apis/v2/sports/soccer/uefa.champions/standings
-standings_wc 169112 https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026
-standings_mls 137561 https://site.api.espn.com/apis/v2/sports/soccer/usa.1/standings
-news 14646 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/news?limit=5
-stats_ath 331 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/statistics/byathlete?region=us&lang=en&contentorigin=espn&isqualified=true&page=1&limit=5
-stats_team 13 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/statistics/byteam?region=us&lang=en&contentorigin=espn&limit=40
-ath_overview 98346 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/93193/overview
-ath_gamelog 36814 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/93193/gamelog
-leaders 116 https://site.web.api.espn.com/apis/site/v3/sports/soccer/eng.1/leaders
-core_leaders 60437 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders?limit=10
+sb_next 55 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261121-20261123&limit=100
+sb_range 55 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261101-20261109&limit=100
+sb_ucl 55 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard?dates=20261103-20261106&limit=100
+sb_wc 55 https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260711-20260720&limit=100
+summary 451249 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=401879240
+summary_ucl 204 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/summary?event=
+summary_pre 195 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=
+core_leaders50 295794 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders?limit=50
+core_athlete 5346 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/athletes/253989?lang=en&region=us
+core_ath_stats 22799 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/athletes/253989/statistics
+core_team_stats 24327 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/teams/359/statistics
+web_roster 215273 https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/359/roster
+roster_stats 215273 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/359/roster?enable=stats
+web_team 12 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/teams/359
+ath_stats 45 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/253989/stats
+ath_splits 45 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/253989/splits
+CORS https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams
+HTTP/2 200 
+CORS https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/253989/overview
+HTTP/2 200 
+access-control-allow-origin: *
+access-control-allow-methods: GET,PUT,POST,DELETE,OPTIONS,HEAD
+access-control-expose-headers: content-length,location
+CORS https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders
+HTTP/2 200 
+access-control-allow-origin: *
+CORS https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings
+HTTP/2 200 
+access-control-allow-origin: *
+access-control-allow-methods: GET,PUT,POST,DELETE,OPTIONS,HEAD
+access-control-expose-headers: content-length,location
