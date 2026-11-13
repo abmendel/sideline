@@ -856,6 +856,7 @@ td.nm .avatar{display:inline-grid;vertical-align:middle;margin-right:8px}
 td.nm .pos{color:var(--dim);font-size:11px;margin-left:6px}
 .probrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cmpbars{display:flex;flex-direction:column;gap:12px}.cb .lbl{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;font-variant-numeric:tabular-nums}.cb .lbl span:nth-child(2){color:var(--muted);font-size:12px}.cb .lbl b{font-weight:600}.cb .bars{display:flex;gap:4px;height:8px}.cb .bars i{display:block;height:100%;border-radius:6px}.cb .bars i.a{background:var(--away)}.cb .bars i.h{background:var(--home)}.cb .bars div{flex:1;display:flex;background:rgba(var(--fg),.06);border-radius:6px;overflow:hidden}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}#modelTrack .orow{grid-template-columns:90px minmax(170px,1.4fr) minmax(140px,1fr) 60px!important}@media (max-width:640px){#modelTrack .orow{grid-template-columns:1fr 1fr!important}.three{grid-template-columns:1fr 1fr}}
+.pl2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plrow{margin-bottom:12px}.plrow .probbar{margin-top:6px}.pltop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}.pltop .muted{font-size:11.5px}.plrow.faded{opacity:.6}@media (max-width:700px){.pl2col{grid-template-columns:1fr}}
 /* ===================== Soccer additions ===================== */
 .lgbar{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px;margin:0 0 14px}
 .lgbar::-webkit-scrollbar{display:none}
@@ -1001,6 +1002,8 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
 @media (max-width:640px){ .scorelines{grid-template-columns:1fr} .scorelines div:last-child{text-align:left} .three{grid-template-columns:1fr} .fx{grid-template-columns:52px 1fr auto} }
 
 .brand .ball,.hav .ball{background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2040%2040%27%3E%3Cdefs%3E%3CradialGradient%20id%3D%27g%27%20cx%3D%27.38%27%20cy%3D%27.32%27%20r%3D%27.8%27%3E%3Cstop%20offset%3D%270%27%20stop-color%3D%27%23fff%27/%3E%3Cstop%20offset%3D%271%27%20stop-color%3D%27%23d5d8dd%27/%3E%3C/radialGradient%3E%3CclipPath%20id%3D%27c%27%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2720%27%20r%3D%2718.5%27/%3E%3C/clipPath%3E%3C/defs%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2720%27%20r%3D%2719%27%20fill%3D%27url%28%23g%29%27/%3E%3Cg%20clip-path%3D%27url%28%23c%29%27%20fill%3D%27%2323252b%27%20stroke%3D%27%2323252b%27%20stroke-width%3D%271.2%27%20stroke-linejoin%3D%27round%27%3E%3Cpolygon%20points%3D%2720%2C13.5%2026.2%2C18%2023.8%2C25.3%2016.2%2C25.3%2013.8%2C18%27/%3E%3Cpath%20d%3D%27M20%2013.5V6M26.2%2018l7-2.3M23.8%2025.3l4.4%206M16.2%2025.3l-4.4%206M13.8%2018l-7-2.3%27%20fill%3D%27none%27/%3E%3Cpolygon%20points%3D%2714.5%2C2%2020%2C6%2025.5%2C2%2020%2C-2%27/%3E%3Cpolygon%20points%3D%2733.2%2C15.7%2038.5%2C12%2041%2C19%2036%2C21%27/%3E%3Cpolygon%20points%3D%2728.2%2C31.3%2034%2C30%2033%2C37%2027%2C37%27/%3E%3Cpolygon%20points%3D%2711.8%2C31.3%206%2C30%207%2C37%2013%2C37%27/%3E%3Cpolygon%20points%3D%276.8%2C15.7%201.5%2C12%20-1%2C19%204%2C21%27/%3E%3C/g%3E%3Ccircle%20cx%3D%2720%27%20cy%3D%2720%27%20r%3D%2719%27%20fill%3D%27none%27%20stroke%3D%27rgba%280%2C0%2C0%2C.25%29%27/%3E%3C/svg%3E") center/contain no-repeat!important;box-shadow:0 6px 16px -6px rgba(0,0,0,.45)!important}
+
+.pl2col{display:grid;grid-template-columns:1fr 1fr;gap:18px}.plrow{margin-bottom:12px}.plrow .probbar{margin-top:6px}.pltop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;font-size:13px}.pltop .muted{font-size:11.5px}@media (max-width:700px){.pl2col{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -1843,7 +1846,69 @@ async function loadDetail() {
     const hc = data.header?.competitions?.[0];
     if (hc) gradeFrom(id, !!hc.status?.type?.completed, hc.competitors || []);
     renderDetail();
+    refreshPredLive(id, state.openLg);
   } catch (e) { if (state.openId === id && !state.detail) renderError('#dBody', e, loadDetail); }
+}
+/* ---------- pre-game vs live: model + DraftKings pre-game line, next to DraftKings' live line ---------- */
+const PGKEY = 'pitchside.pregame.v1';
+const PREGAME = store.get(PGKEY, {});
+const savePregame = () => { const ks = Object.keys(PREGAME); if (ks.length > 500) ks.sort((a, b) => (PREGAME[a].at || 0) - (PREGAME[b].at || 0)).slice(0, ks.length - 400).forEach(k => delete PREGAME[k]); store.set(PGKEY, PREGAME); };
+const PL = {};
+function coreLine3(o) {
+  if (!o || !o.provider) return null;
+  const am = x => num(x?.american ?? x?.alternateDisplayValue ?? x);
+  const h = am(o.homeTeamOdds?.current?.moneyLine) ?? num(o.homeTeamOdds?.moneyLine), a = am(o.awayTeamOdds?.current?.moneyLine) ?? num(o.awayTeamOdds?.moneyLine);
+  const d = am(o.drawOdds?.current?.moneyLine) ?? num(o.drawOdds?.moneyLine);
+  const f = fair3(h, d, a);
+  return { h, d, a, p: f ? { h: f[0], d: f[1], a: f[2] } : null, details: o.details || '', tot: num(o.overUnder) };
+}
+async function refreshPredLive(id, lg) {
+  const dd = state.detail; if (!dd || state.openId !== id) return;
+  const hc = dd.header?.competitions?.[0] || {}, st = hc.status?.type?.state || 'pre';
+  const P = PL[id] ||= {};
+  if (st === 'in') { const o = await safe(getJSON(`${CORE}/${lg}/events/${id}/competitions/${id}/odds/200?_=${Math.floor(Date.now() / 1e4)}`)); P.live = coreLine3(o); P.liveAt = Date.now(); }
+  if (st === 'pre') {
+    const ev = state.events.find(e => String(e.id) === String(id));
+    const m = ev ? (learnedFor(ev) || modelFor(ev)) : null;
+    const o = parseOdds((dd.pickcenter || []).find(Boolean)) || (ev ? oddsForEvent(ev) : null);
+    const prev = PREGAME[id] || {};
+    PREGAME[id] = { at: Date.now(), m: m ? { h: m.h, d: m.d, a: m.a, learned: !!m.learned } : prev.m || null, mk: o && o.fairH != null ? { h: o.fairH, d: o.fairD, a: o.fairA, ml: [o.h, o.d, o.a], open: o.ofH != null ? { h: o.ofH, d: o.ofD, a: o.ofA } : prev.mk?.open || null, tot: o.tot } : prev.mk || null };
+    savePregame();
+  }
+  if (state.openId === id && state.detail === dd && st === 'in') renderDetail();
+}
+function predLiveSection(d, home, away, st, ev) {
+  const id = state.openId, P = PL[id] || {}, S = PREGAME[id] || {};
+  const ha = tAbbr(home.team), aa = tAbbr(away.team);
+  const o = parseOdds((d.pickcenter || []).find(Boolean)) || (ev ? oddsForEvent(ev) : null);
+  const mk = S.mk || (o && o.fairH != null ? { h: o.fairH, d: o.fairD, a: o.fairA, ml: [o.h, o.d, o.a], open: o.ofH != null ? { h: o.ofH, d: o.ofD, a: o.ofA } : null, tot: o.tot } : null);
+  const mNow = ev ? (learnedFor(ev) || modelFor(ev)) : null;
+  const m = S.m || (mNow ? { h: mNow.h, d: mNow.d, a: mNow.a, learned: !!mNow.learned } : null);
+  const L = st === 'in' ? P.live : null;
+  if (!m && !mk && !L) return '';
+  const bar = (label, p, sub) => !p || p.h == null ? '' : `<div class="plrow"><div class="pltop"><b>${esc(label)}</b><span class="muted">${sub || ''}</span></div>
+    <div class="probbar three-way"><i style="width:${(p.h * 100).toFixed(1)}%;background:var(--home)"></i><i style="width:${((p.d || 0) * 100).toFixed(1)}%"></i><i style="width:${(p.a * 100).toFixed(1)}%;background:var(--away)"></i></div>
+    <div class="probnums three-way"><span>${esc(ha)} ${pct(p.h)}</span><span>Draw ${pct(p.d)}</span><span>${esc(aa)} ${pct(p.a)}</span></div></div>`;
+  const mls = x => x ? `${esc(ha)} ${esc(fmtAm(x[0]))} · Draw ${esc(fmtAm(x[1]))} · ${esc(aa)} ${esc(fmtAm(x[2]))}` : '';
+  let pre = bar(m?.learned ? 'Our trained model' : 'Our form model', m, st === 'pre' ? (m?.learned ? 'nightly ratings for this league' : 'points per game and recent form') : S.m ? 'saved before kick-off' : 'what it said going in')
+    + bar('DraftKings pre-match line', mk, [mls(mk?.ml), mk?.tot != null ? `total ${esc(mk.tot)}` : ''].filter(Boolean).join(' · '));
+  if (mk?.open && Math.abs(mk.open.h - mk.h) >= .01) pre += `<p class="note" style="margin:2px 0 8px">At opening: ${esc(ha)} ${pct(mk.open.h)} · Draw ${pct(mk.open.d)} · ${esc(aa)} ${pct(mk.open.a)}. The line moved ${mk.h > mk.open.h ? 'toward' : 'away from'} ${esc(ha)} by ${Math.round(Math.abs(mk.h - mk.open.h) * 100)} pts.</p>`;
+  let live = '';
+  if (st === 'in') {
+    live = L && L.p ? bar('DraftKings live line', L.p, [mls([L.h, L.d, L.a]), L.tot != null ? `total ${esc(L.tot)}` : ''].filter(Boolean).join(' · '))
+      : `<div class="plrow"><div class="pltop"><b>DraftKings live line</b><span class="muted">${P.liveAt ? 'not posted for this match right now' : 'loading…'}</span></div><p class="note" style="margin:4px 0 0">DraftKings only prices some matches in play through ESPN.</p></div>`;
+    const was = mk || m, now = L?.p;
+    if (was && now) { const top = p => p.h >= p.a && p.h >= p.d ? ['H', p.h] : p.a >= p.d ? ['A', p.a] : ['D', p.d]; const nm = k => k === 'H' ? ha : k === 'A' ? aa : 'a draw'; const [k0, p0] = top(was), [k1, p1] = top(now); if (Math.abs(p1 - (k1 === 'H' ? was.h : k1 === 'A' ? was.a : was.d)) >= .05) live += `<p class="note" style="margin:2px 0 0">${k0 === k1 ? `${esc(nm(k1))} still the most likely result: ${Math.round(p1 * 100)}% now vs ${Math.round(p0 * 100)}% before kick-off.` : `Swing: ${esc(nm(k0))} was the most likely result before kick-off (${Math.round(p0 * 100)}%); now it’s ${esc(nm(k1))} (${Math.round(p1 * 100)}%).`}</p>`; }
+  } else if (st === 'post') {
+    const hs = num(scoreVal(home.score)), as = num(scoreVal(away.score));
+    if (hs != null && as != null) {
+      const res = hs > as ? 'H' : as > hs ? 'A' : 'D', top = p => p.h >= p.a && p.h >= p.d ? 'H' : p.a >= p.d ? 'A' : 'D', nm = k => k === 'H' ? ha : k === 'A' ? aa : 'Draw';
+      const cell = (p, who) => p ? `<div><b>${esc(nm(top(p)))} ${Math.round(Math.max(p.h, p.d, p.a) * 100)}%</b><span>${who} ${top(p) === res ? '✓ called it' : '✗ missed'}</span></div>` : `<div><b>—</b><span>${who}</span></div>`;
+      live = `<div class="plrow"><div class="pltop"><b>How the pre-match numbers did</b><span class="muted">${res === 'D' ? 'Draw' : esc(nm(res)) + ' won'}</span></div><div class="statline" style="grid-template-columns:repeat(2,1fr)">${cell(m, 'Our model')}${cell(mk, 'DraftKings')}</div></div>`;
+    }
+  }
+  return `<div class="section panel glass">${panelHead(st === 'pre' ? 'Prediction & odds' : st === 'in' ? 'Pre-match vs live' : 'Pre-match prediction & odds', st === 'in' ? 'live line refreshes with the match' : st === 'pre' ? 'chances with the sportsbook margin removed' : 'how the numbers looked before kick-off', IC.$)}
+    <div class="${live ? 'pl2col' : ''}"><div><div class="sublabel" style="margin-top:0">Pre-match</div>${pre || '<div class="muted">No pre-match numbers.</div>'}</div>${live ? `<div><div class="sublabel" style="margin-top:0">${st === 'in' ? 'Live now' : 'Result'}</div>${live}</div>` : ''}</div></div>`;
 }
 function detailTeams(d) {
   const hc = d.header?.competitions?.[0] || {}, comps = hc.competitors || [];
@@ -2008,6 +2073,7 @@ function renderDetail() {
 
   if (ev && (st === 'pre' || PICKS[ev.id])) h += `<div class="section panel glass" style="padding:10px 12px">${pickRow(ev).replace('class="pickrow"', 'class="pickrow" style="padding:0"')}</div>`;
   h += keysSection(d, home, away, st);
+  h += predLiveSection(d, home, away, st, ev);
 
   // odds
   const o = parseOdds((d.pickcenter || []).find(Boolean) || (d.odds || []).find(Boolean)) || (ev ? oddsForEvent(ev) : null);
@@ -2022,8 +2088,7 @@ function renderDetail() {
       </div>
       ${o.tot != null ? `<p class="note" style="margin-top:10px">Total goals ${esc(o.tot)}${o.over != null ? ` · Over ${esc(fmtAm(o.over))} / Under ${esc(fmtAm(o.under))}` : ''}${o.totO != null && o.totO !== o.tot ? ` · opened ${esc(o.totO)}` : ''}</p>` : ''}
       ${o.fairH != null ? `<div class="sublabel">Fair chances</div><div class="probbar three-way"><i style="width:${(o.fairH * 100).toFixed(1)}%;background:var(--home)"></i><i style="width:${(o.fairD * 100).toFixed(1)}%"></i><i style="width:${(o.fairA * 100).toFixed(1)}%;background:var(--away)"></i></div>
-        <div class="probnums three-way"><span>${esc(ha)} ${pct(o.fairH)}</span><span>Draw ${pct(o.fairD)}</span><span>${esc(aa)} ${pct(o.fairA)}</span></div>` : ''}
-      ${(() => { const md = ev ? (learnedFor(ev) || modelFor(ev)) : null; return md && st === 'pre' ? `<p class="note" style="margin-top:8px">${md.learned ? 'Trained model' : 'Form model'}: ${esc(ha)} ${pct(md.h)} · Draw ${pct(md.d)} · ${esc(aa)} ${pct(md.a)}</p>` : ''; })()}</div>`;
+        <div class="probnums three-way"><span>${esc(ha)} ${pct(o.fairH)}</span><span>Draw ${pct(o.fairD)}</span><span>${esc(aa)} ${pct(o.fairA)}</span></div>` : ''}</div>`;
   }
 
   h += timelineHtml(d, home);
