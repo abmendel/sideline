@@ -1,31 +1,11 @@
-sb_next 55 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261121-20261123&limit=100
-sb_range 55 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261101-20261109&limit=100
-sb_ucl 55 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard?dates=20261103-20261106&limit=100
-sb_wc 55 https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260711-20260720&limit=100
-summary 451249 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=401879240
-summary_ucl 204 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/summary?event=
-summary_pre 195 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=
-core_leaders50 295794 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders?limit=50
-core_athlete 5346 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/athletes/253989?lang=en&region=us
-core_ath_stats 22799 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/athletes/253989/statistics
-core_team_stats 24327 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/teams/359/statistics
-web_roster 215273 https://site.web.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/359/roster
-roster_stats 215273 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams/359/roster?enable=stats
-web_team 12 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/teams/359
-ath_stats 45 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/253989/stats
-ath_splits 45 https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/253989/splits
-CORS https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/teams
-HTTP/2 200 
-CORS https://site.web.api.espn.com/apis/common/v3/sports/soccer/eng.1/athletes/253989/overview
-HTTP/2 200 
-access-control-allow-origin: *
-access-control-allow-methods: GET,PUT,POST,DELETE,OPTIONS,HEAD
-access-control-expose-headers: content-length,location
-CORS https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1/seasons/2026/types/1/leaders
-HTTP/2 200 
-access-control-allow-origin: *
-CORS https://site.api.espn.com/apis/v2/sports/soccer/eng.1/standings
-HTTP/2 200 
-access-control-allow-origin: *
-access-control-allow-methods: GET,PUT,POST,DELETE,OPTIONS,HEAD
-access-control-expose-headers: content-length,location
+sb_next 88461 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261121&limit=100
+sb_all_next 1019028 https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=20261121
+sb_all_today 712518 https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard?dates=20261112
+sb_ucl 111798 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/scoreboard?dates=20261104
+sb_mls 179604 https://site.api.espn.com/apis/site/v2/sports/soccer/usa.1/scoreboard
+summary_pre 187459 https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/summary?event=401879233
+summary_ucl 468897 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/summary?event=401915383
+summary_live 168961 https://site.api.espn.com/apis/site/v2/sports/soccer/all/summary?event=401931922
+teams_ucl 43617 https://site.api.espn.com/apis/site/v2/sports/soccer/uefa.champions/teams
+teams_wc 56316 https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/teams
+core_league 6780 https://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1
