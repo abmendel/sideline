@@ -4,16 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sideline · Live Sports</title>
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;background:#ecebf4;font-family:Inter,-apple-system,BlinkMacSystemFont,system-ui,sans-serif}
-  body.dark{background:#15141d}
+  :root{color-scheme:light dark;--bg:#f2f2f7;--dim:#6e6e76;--acc:#c2410c}
+  @media (prefers-color-scheme:dark){:root:not(.light){--bg:#000;--dim:#98989f;--acc:#ff8a3d}}
+  :root.dark{--bg:#000;--dim:#98989f;--acc:#ff8a3d}
+  :root.light{--bg:#f2f2f7;--dim:#6e6e76;--acc:#c2410c}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",system-ui,sans-serif}
   iframe.sport{position:fixed;inset:0;width:100%;height:100%;border:0;display:none;background:transparent}
   iframe.sport.on{display:block}
-  .boot{position:fixed;inset:0;display:grid;place-items:center;color:rgba(40,38,62,.55);font-size:14px;transition:opacity .25s}
-  body.dark .boot{color:rgba(236,234,255,.55)}
+  .boot{position:fixed;inset:0;display:grid;place-items:center;color:var(--dim);font-size:15px;text-align:center;transition:opacity .25s}
   .boot.gone{opacity:0;pointer-events:none}
-  .boot i{display:block;width:34px;height:34px;margin:0 auto 12px;border-radius:50%;border:3px solid rgba(127,120,200,.25);border-top-color:#ff7f3f;animation:spin .8s linear infinite}
+  .boot i{display:block;width:28px;height:28px;margin:0 auto 12px;border-radius:50%;border:3px solid color-mix(in srgb,var(--dim) 30%,transparent);border-top-color:var(--acc);animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.boot i{animation-duration:2.4s}}
 </style>
 </head>
 <body>
@@ -40,10 +45,10 @@ const store = {
 };
 const frames = {};          // id -> iframe (created the first time a sport is opened, then kept alive)
 let current = null;
-let theme = store.get('hub.theme');
+let theme = store.get('hub.appearance');   // 'auto' | 'light' | 'dark'; unset = follow the system
 const byId = id => SPORTS.find(s => s.id === id);
 const list = () => SPORTS.map(({ id, name, icon }) => ({ id, name, icon }));
-const applyShellTheme = () => document.body.classList.toggle('dark', theme === 'dark');
+const applyShellTheme = () => { const r = document.documentElement; r.classList.toggle('dark', theme === 'dark'); r.classList.toggle('light', theme === 'light'); };
 applyShellTheme();
 
 function frameFor(id) {
@@ -76,8 +81,8 @@ window.addEventListener('message', e => {
     if (f.dataset.sport === current) document.getElementById('boot').classList.add('gone');
   }
   if (d.type === 'switch' && byId(d.id)) show(d.id);
-  if (d.type === 'theme' && (d.tv === 'light' || d.tv === 'dark') && d.tv !== theme) {   // keep light/dark in sync across sports
-    theme = d.tv; store.set('hub.theme', theme); applyShellTheme();
+  if (d.type === 'theme' && ['auto', 'light', 'dark'].includes(d.tv) && d.tv !== theme) {   // keep the appearance setting in sync across sports
+    theme = d.tv; store.set('hub.appearance', theme); applyShellTheme();
     Object.values(frames).forEach(x => { if (x !== f) send(x, { type: 'theme', tv: theme }); });
   }
 });
