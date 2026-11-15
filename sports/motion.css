@@ -38,6 +38,16 @@
 .side .brand:hover .mark{transform:rotate(180deg) scale(1.08)}
 .chip.clutch{animation:sl-flicker 1.6s ease-in-out infinite}
 
+/* ---------- percentage charts ---------- */
+.probbar{position:relative}
+.probbar.sl-shine::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.65) 50%,transparent 70%);animation:sl-barshine 1s ease-out both}
+[data-theme=dark] .probbar.sl-shine::after{background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.3) 50%,transparent 70%)}
+.probbar i,.cb .bars i,.spark i,.mc-bars i{transition:filter .2s}
+.probbar:hover i,.cb:hover .bars i,.spark div:hover i,.mc-bars>div:hover i{filter:brightness(1.12) saturate(1.1)}
+.mc-bars>div:hover em,.spark div:hover em{transform:translateY(-2px);transition:transform .2s}
+svg.ring{transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+svg.ring:hover{transform:scale(1.05) rotate(-3deg)}
+
 /* ---------- loading placeholders sweep instead of sitting still ---------- */
 .skeleton{background-size:200% 100%}
 }
@@ -50,4 +60,5 @@
 @keyframes sl-score{0%{transform:translateY(-6px) scale(1.25);color:var(--acc-text);text-shadow:0 0 18px rgba(var(--acc-rgb),.55)}55%{transform:translateY(1px) scale(.97)}100%{transform:none;text-shadow:none}}
 @keyframes sl-sheen{0%,72%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 @keyframes sl-flicker{0%,100%{transform:none}50%{transform:scale(1.06) rotate(-2deg)}}
+@keyframes sl-barshine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 @keyframes sl-pop{0%{transform:scale(.6)}55%{transform:scale(1.22)}100%{transform:scale(1)}}
