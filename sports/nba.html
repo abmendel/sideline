@@ -59,11 +59,6 @@
         <div class="hsec" data-sec="spot"><span class="drag" draggable="true" title="Drag to rearrange">⋮⋮</span><div id="spotWrap" style="height:100%"></div></div>
         <div class="hsec" data-sec="tiles"><span class="drag" draggable="true" title="Drag to rearrange">⋮⋮</span><div class="tiles glass" id="tiles"></div></div>
         <div class="hsec" data-sec="bet"><span class="drag" draggable="true" title="Drag to rearrange">⋮⋮</span><div class="betbox glass" id="betBox"></div></div>
-        <div class="hsec panel glass" data-sec="chart"><span class="drag" draggable="true" title="Drag to rearrange">⋮⋮</span>
-          <div class="ph"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7"/></svg></span><h3>Scoreboard</h3><span class="sub" id="chartSub"></span></div>
-          <div class="legend"><span><i class="lg-home"></i>Highest-scoring game</span><span><i style="background:rgba(var(--fg),.18)"></i>Other games</span></div>
-          <div class="chartbox" id="ptsChart"><div class="tip" id="ptsTip"></div></div>
-        </div>
       </div>
       <div class="sechead"><h2 id="gamesTitle">Games</h2><span class="sub" id="gamesSub"></span><span class="spacer"></span>
 <div class="roomtabs glass" id="filters">
@@ -74,6 +69,11 @@
     </div>
       </div>
       <div class="grid" id="games"></div>
+      <div class="hsec panel glass" data-sec="chart" id="chartBelow" style="margin-top:20px">
+          <div class="ph"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7"/></svg></span><h3>Scoreboard</h3><span class="sub" id="chartSub"></span></div>
+          <div class="legend"><span><i class="lg-home"></i>Highest-scoring game</span><span><i style="background:rgba(var(--fg),.18)"></i>Other games</span></div>
+          <div class="chartbox" id="ptsChart"><div class="tip" id="ptsTip"></div></div>
+        </div>
     </section>
 
     <section id="view-mine" class="hidden"><div class="mine-grid" id="mine"></div></section>
@@ -276,7 +276,7 @@ function applySettings() {
   applyLayout();
 }
 function applyLayout() {
-  $$('#hero .hsec').forEach(el => {
+  $$('.hsec').forEach(el => {               // the Scoreboard chart now sits below the games
     const k = el.dataset.sec;
     el.style.order = SET.layout.indexOf(k);
     el.classList.toggle('hidden', SET.hidden.includes(k));
