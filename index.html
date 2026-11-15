@@ -7,10 +7,10 @@
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <style>
-  :root{color-scheme:light dark;--bg:#f2f2f7;--dim:#6e6e76;--acc:#c2410c}
-  @media (prefers-color-scheme:dark){:root:not(.light){--bg:#000;--dim:#98989f;--acc:#ff8a3d}}
-  :root.dark{--bg:#000;--dim:#98989f;--acc:#ff8a3d}
-  :root.light{--bg:#f2f2f7;--dim:#6e6e76;--acc:#c2410c}
+  :root{color-scheme:light dark;--bg:#eef0f6;--dim:#6e6e76;--acc:#c2410c}
+  @media (prefers-color-scheme:dark){:root:not(.light){--bg:#0b0b10;--dim:#98989f;--acc:#ff8a3d}}
+  :root.dark{--bg:#0b0b10;--dim:#98989f;--acc:#ff8a3d}
+  :root.light{--bg:#eef0f6;--dim:#6e6e76;--acc:#c2410c}
   html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",system-ui,sans-serif}
   :root{--text:#1c1c1e}
   @media (prefers-color-scheme:dark){:root:not(.light){--text:#f5f5f7}}
@@ -20,7 +20,7 @@
   iframe.sport.on{visibility:visible;opacity:1;transform:none;transition:opacity .32s ease,transform .42s cubic-bezier(.2,.8,.2,1)}
 
   /* intro: the ball roll call and the wordmark, until the first sport is ready */
-  .boot{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:var(--bg);color:var(--dim);text-align:center;transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1),visibility 0s .6s}
+  .boot{position:fixed;inset:0;z-index:5;display:grid;place-items:center;background:radial-gradient(40vmax 36vmax at 18% 14%,rgba(194,65,12,.26),transparent 70%),radial-gradient(42vmax 38vmax at 86% 20%,rgba(90,140,255,.26),transparent 70%),radial-gradient(44vmax 40vmax at 70% 92%,rgba(170,110,255,.2),transparent 72%),var(--bg);color:var(--dim);text-align:center;transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1),visibility 0s .6s}
   .boot.gone{opacity:0;transform:scale(1.04);visibility:hidden;pointer-events:none}
   .balls{display:flex;gap:14px;justify-content:center;height:54px;align-items:flex-end;margin-bottom:18px;font-size:30px;line-height:1}
   .balls span{display:inline-block;transform-origin:50% 100%;animation:drop .7s cubic-bezier(.3,1.5,.5,1) both,hop 1.6s ease-in-out infinite;animation-delay:calc(var(--i) * 90ms),calc(900ms + var(--i) * 120ms)}
