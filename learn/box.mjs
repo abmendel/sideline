@@ -57,6 +57,35 @@ function oddsFromCore(items) {
   return r.h[1] != null && r.a[1] != null ? r : null;
 }
 
+/* ---------- spreads and totals: L = [home spread open, close, total open, close] ---------- */
+const line = v => { const n = num(typeof v === 'object' ? v?.american ?? v?.alternateDisplayValue ?? v?.line : v); return n == null || Math.abs(n) > 400 ? null : n; };
+function linesFromPick(pc) {
+  const list = pc || [], o = list.find(x => /draftkings/i.test(x.provider?.name || '')) || list.find(x => !/live/i.test(x.provider?.name || '')) || null;
+  if (!o) return null;
+  const ps = o.pointSpread || {}, tt = o.total || {};
+  const L = [line(ps.home?.open?.line), line(ps.home?.close?.line) ?? line(o.spread), line(tt.over?.open?.line), line(tt.over?.close?.line) ?? line(o.overUnder)];
+  return L[1] != null || L[3] != null ? L : null;
+}
+function linesFromCore(items) {
+  const list = (items || []).filter(x => !/live/i.test(x.provider?.name || ''));
+  const o = list.find(x => /draft ?kings/i.test(x.provider?.name || '')) || list.find(x => /espn ?bet/i.test(x.provider?.name || '')) || list[0];
+  if (!o) return null;
+  const h = o.homeTeamOdds || {};
+  const L = [line(h.open?.pointSpread), line(h.close?.pointSpread) ?? line(o.spread), line(o.open?.total) ?? line(o.open?.overUnder), line(o.close?.total) ?? line(o.overUnder)];
+  return L[1] != null || L[3] != null ? L : null;
+}
+/* soccer lineups: starters per team, plus names for the rankings */
+function lineupsOf(sm, names) {
+  const x = {};
+  (sm.rosters || []).forEach(r => {
+    const tid = String(r.team?.id || ''); if (!tid) return;
+    const st = (r.roster || []).filter(p => p.starter && p.athlete?.id);
+    if (!st.length) return;
+    x[tid] = st.map(p => { const id = String(p.athlete.id); if (names) names[id] = [p.athlete.displayName || p.athlete.fullName || '', p.position?.abbreviation || '']; return id; });
+  });
+  return Object.keys(x).length ? x : null;
+}
+
 /* ---------- box score extraction ---------- */
 function teamStats(sm) {
   const t = {};
@@ -115,8 +144,36 @@ function extract(kind, sm) {
 }
 
 /* ---------- fill in a batch of games that have no box score yet (newest first) ---------- */
+/* games stored before spreads and lineups were kept: fetch just those (core odds for US sports, the summary for soccer) */
+const LINECAP = { nba: 6000, nfl: 3000, mlb: 9000, nhl: 6000, soccer: 1300 };
+let NAMES = null;
+async function loadNames(sp) { try { NAMES = JSON.parse(await fs.readFile(new URL(`${sp}-names.json`, DATA), 'utf8')); } catch { NAMES = {}; } }
+async function saveNames(sp) { await fs.mkdir(DATA, { recursive: true }); await fs.writeFile(new URL(`${sp}-names.json`, DATA), JSON.stringify(NAMES)); }
+export async function loadNamesFor(sp) { await loadNames(sp); return NAMES; }
+async function backfillLines(sp, S, store, box, fetchJSON, kind, cap) {
+  const want = Object.entries(box).filter(([id, b]) => b.t && !b.lv && store.games[id]).sort((x, y) => new Date(store.games[y[0]].date) - new Date(store.games[x[0]].date)).slice(0, cap);
+  let i = 0, got = 0;
+  await Promise.all(Array.from({ length: 10 }, async () => {
+    while (i < want.length) {
+      const [id, b] = want[i++];
+      if (kind === 'soccer') {
+        const sm = await fetchJSON(`${SITE(S.path)}/summary?event=${id}`).catch(() => null);
+        if (!sm) continue;
+        const L = linesFromPick(sm.pickcenter), x = lineupsOf(sm, NAMES);
+        if (L) b.L = L; if (x) b.x = x; b.lv = 1; got++;
+      } else {
+        const co = await fetchJSON(`${CORE(S.path)}/events/${id}/competitions/${id}/odds?limit=20`).catch(() => null);
+        if (!co) continue;
+        const L = linesFromCore(co.items); if (L) b.L = L; b.lv = 1; got++;
+      }
+    }
+  }));
+  const left = Object.values(box).filter(b => b.t && !b.lv).length;
+  if (want.length) console.log(`${sp}: spreads/totals${kind === 'soccer' ? ' and lineups' : ''} for ${got} older games (${left} still to fetch)`);
+}
 export async function backfill(sp, S, store, fetchJSON, log, cap = 1200) {
   const kind = kindOf(S.path), box = await loadBox(sp);
+  if (kind === 'soccer') await loadNames(sp);
   const want = Object.entries(store.games).filter(([id, g]) => g.done && (S.anyType || g.type === 2 || g.type === 3) && (!box[id] || (box[id].miss && box[id].miss < 3 && Date.now() - new Date(g.date) < 30 * 864e5))).sort((x, y) => new Date(y[1].date) - new Date(x[1].date)).slice(0, cap);
   let got = 0, odds = 0, i = 0;
   await Promise.all(Array.from({ length: 8 }, async () => {
@@ -124,16 +181,18 @@ export async function backfill(sp, S, store, fetchJSON, log, cap = 1200) {
       const [id, g] = want[i++];
       const sm = await fetchJSON(`${SITE(S.path)}/summary?event=${id}`).catch(() => null);
       if (!sm) { box[id] = { miss: (box[id]?.miss || 0) + 1, s: g.season }; continue; }
-      let o = oddsFromPick(sm.pickcenter) || oddsFromPick(sm.odds);
-      if (!o) { const co = await fetchJSON(`${CORE(S.path)}/events/${id}/competitions/${id}/odds?limit=20`).catch(() => null); o = oddsFromCore(co?.items); }
-      const t = extract(kind, sm);
-      box[id] = { t, ...(o ? { o } : {}), s: g.season };
+      let o = oddsFromPick(sm.pickcenter) || oddsFromPick(sm.odds), L = linesFromPick(sm.pickcenter);
+      if (!o || !L) { const co = await fetchJSON(`${CORE(S.path)}/events/${id}/competitions/${id}/odds?limit=20`).catch(() => null); o = o || oddsFromCore(co?.items); L = L || linesFromCore(co?.items); }
+      const t = extract(kind, sm), x = kind === 'soccer' ? lineupsOf(sm, NAMES) : null;
+      box[id] = { t, ...(o ? { o } : {}), ...(L ? { L } : {}), ...(x ? { x } : {}), lv: 1, s: g.season };
       got++; if (o) odds++;
     }
   }));
+  await backfillLines(sp, S, store, box, fetchJSON, kind, LINECAP[kind] || 1500);
   await saveBox(sp, box, store.games);
+  if (kind === 'soccer') await saveNames(sp);
   const total = Object.values(store.games).filter(g => g.done && (S.anyType || g.type === 2 || g.type === 3)).length, have = Object.values(box).filter(b => b.t).length;
   log(`${sp}: box scores ${have}/${total} games (+${got} this run, ${odds} with lines)`);
   return box;
 }
-export { extract, oddsFromPick, oddsFromCore };
+export { extract, oddsFromPick, oddsFromCore, linesFromPick, linesFromCore, lineupsOf };
