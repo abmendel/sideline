@@ -8,7 +8,8 @@
 // grade it walk-forward (every game predicted using only earlier games) and fit how much to trust
 // the model versus the betting market once enough snapshots have results.
 import fs from 'node:fs/promises';
-import { backfill, loadBox } from './box.mjs';
+import { backfill, loadBox, loadNamesFor } from './box.mjs';
+import { buildAnalytics } from './analytics.mjs';
 import { tuneUS, walkUS, evalRows, scoreUS, fitBlendUS, tuneSoccer, walkSoccer, evalSoccer, scoreSoccer, fitBlend3, pOf, pick3 } from './model2.mjs';
 
 const SPORTS = {
@@ -294,7 +295,7 @@ function trainUSv2(sp, store, box, S, log) {
   return { sport: sp, version: 2, updated: new Date().toISOString(), features: r.list, w: r.w.map(v => +v.toFixed(4)), sigma: +r.sigma.toFixed(3), rest: S.rest, params: tune.P,
     games: r.rows, seasons: r.seasons, curSeason: r.curSeason, teams, tables, eval: evalOf(rows, S),
     blend: blend ? { ...blend, wModel: blend.wm, wMarket: blend.wk, accModel: holdout.model.acc, accMarket: holdout.market.acc, accBlend: holdout.blend.acc } : null,
-    compare: { old: tune.old, new: tune.score, holdout }, snapshots: snaps };
+    compare: { old: tune.old, new: tune.score, holdout }, snapshots: snaps, _wf: r.wf };
 }
 function trainSoccerV2(lg, store, box, S, log) {
   const best = tuneSoccer(lg, store.games, box, S);
@@ -309,7 +310,7 @@ function trainSoccerV2(lg, store, box, S, log) {
   const cur = r.seasons[r.seasons.length - 1], teams = {};
   Object.keys(r.T).filter(r.real).forEach(id => { const t = r.T[id], k = t.season != null && cur != null && t.season !== cur ? best.P.carry : 1; teams[id] = { att: r4(t.att * k), def: r4(t.def * k) }; });
   return { sport: lg, version: 2, kind: 'soccer', updated: new Date().toISOString(), mu: r4(r.mu), home: r4(r.home), rho: best.P.rho, params: best.P, games: r.wf.length, seasons: r.seasons, curSeason: cur, teams,
-    eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length };
+    eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length, _wf: r.wf };
 }
 
 const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500 };
@@ -326,7 +327,14 @@ async function run(sp, log) {
   const box = await backfill(sp, S, store, fetchJSON, log, BOXCAP[sp] || 900);
   const model = S.draws ? trainSoccerV2(sp, store, box, S, log) : trainUSv2(sp, store, box, S, log);
   if (!model) { log(`${sp}: not enough games to train`); return null; }
+  const wf = model._wf; delete model._wf;
   await writeJSON(`model-${sp}.json`, model);
+  try {                                                        // spreads, totals and player impact for the Analytics tab
+    const A = await buildAnalytics(sp, S, store, box, model, wf, fetchJSON, S.draws ? { names: await loadNamesFor(sp) } : {});
+    await writeJSON(`analytics-${sp}.json`, A);
+    const cur = A.spreads[0];
+    log(`${sp}: analytics · ${cur ? `${cur.league.games} games vs the spread in ${cur.season}, home covered ${(cur.league.homeCover * 100).toFixed(1)}%, model ${cur.league.model ? (cur.league.model.pct * 100).toFixed(1) + '%' : '—'} ATS` : 'no spreads yet'} · ${A.players ? A.players.rows.length + ' players ranked' : 'no player ranking'}`);
+  } catch (e) { log(`${sp}: analytics failed — ${e.message}`); }
   log(`${sp}: ${model.games} games learned · walk-forward ${(model.eval.all.acc * 100 || 0).toFixed(1)}% · this season ${model.eval.season.n || 0} games ${(model.eval.season.acc * 100 || 0).toFixed(1)}% · ${model.blend ? `blend ${JSON.stringify(model.blend)}` : 'no blend yet'} · holdout ${JSON.stringify(model.compare?.holdout)}`);
   return model;
 }

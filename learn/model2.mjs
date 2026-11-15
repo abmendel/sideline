@@ -120,7 +120,7 @@ export function walkUS(sport, games, box, S, P, feats) {
     const y = g.hs - g.as, m = w.reduce((s, v, i) => s + v * x[i], 0), p = Phi(m / sigma);
     if (y !== 0) {
       const o = b && b.o, close = o ? fair(o.h[1], o.a[1]) : null, open = o && o.h[0] != null && o.a[0] != null ? fair(o.h[0], o.a[0]) : null;
-      wf.push({ id: g.id, date: g.date, d, season: g.season, h: g.h, a: g.a, hs: g.hs, as: g.as, p, y: y > 0 ? 1 : 0, n: rows, mkH: close ? close.h : null, opH: open ? open.h : null });
+      wf.push({ id: g.id, date: g.date, d, season: g.season, h: g.h, a: g.a, hs: g.hs, as: g.as, p, m, y: y > 0 ? 1 : 0, n: rows, mkH: close ? close.h : null, opH: open ? open.h : null });
     }
     resid.push(y - m);
     for (let i = 0; i < n; i++) { bb[i] += x[i] * y; for (let j = 0; j < n; j++) AA[i][j] += x[i] * x[j]; }
@@ -197,7 +197,7 @@ export function walkSoccer(lg, games, box, S, P) {
     const lh = Math.exp(mu + (g.neutral ? 0 : home) + H.att + A.def), la = Math.exp(mu + A.att + H.def);
     const pr = goalProbs(lh, la, P.rho), res = g.hs > g.as ? 'H' : g.hs < g.as ? 'A' : 'D';
     const o = b && b.o, close = o && o.d ? fair(o.h[1], o.a[1], o.d[1]) : null, open = o && o.d && o.h[0] != null && o.a[0] != null && o.d[0] != null ? fair(o.h[0], o.a[0], o.d[0]) : null;
-    wf.push({ id: g.id, date: g.date, d: dayOf(g.date), season: g.season, h: g.h, a: g.a, hs: g.hs, as: g.as, pr, res, n: wf.length, mk: close, op: open });
+    wf.push({ id: g.id, date: g.date, d: dayOf(g.date), season: g.season, h: g.h, a: g.a, hs: g.hs, as: g.as, pr, res, lh, la, n: wf.length, mk: close, op: open });
     const th = b && b.t && b.t[g.h], ta = b && b.t && b.t[g.a];
     const yh = th && th[1] != null ? (1 - P.sw) * g.hs + P.sw * .32 * th[1] : g.hs, ya = ta && ta[1] != null ? (1 - P.sw) * g.as + P.sw * .32 * ta[1] : g.as;
     const eh = yh - lh, ea = ya - la, k = P.k * (H.gp < 6 || A.gp < 6 ? 1.6 : 1);

@@ -50,7 +50,8 @@
     const P = (M.tables && M.tables.players) || {};
     return out.reduce((s, o) => { const min = team.rot ? team.rot[o.id] || 0 : 0; return min < 8 ? s : s + Math.max(0, nbaRating(P, o.id) - NBA_REPL) * min / 36 * (o.sit == null ? 1 : o.sit); }, 0);
   }
-  const goalieQ = (M, id) => { const G = (M.tables && M.tables.goalies) || {}, g = id && G[id], lg = (M.tables && M.tables.lgSv) || .9; if (!g) return 0; return (lg * g[0] - g[1]) / (g[0] + 900) * 30; };
+  // goals saved above an average goalie per 30 shots: (expected goals against − actual) / shots, shrunk toward 0 with 900 shots of average play
+  const goalieQ = (M, id) => { const G = (M.tables && M.tables.goalies) || {}, g = id && G[id], lg = (M.tables && M.tables.lgSv) || .9; if (!g) return 0; return ((1 - lg) * g[0] - g[1]) / (g[0] + 900) * 30; };
   function spValue(M, id) {
     const T = M.tables || {}, R = T.pitchers || {}, p = id && R[id], lg = T.lgFip || 4.2, c = T.cFip || 3.1;
     if (!p) return -.15;                                                   // unknown starter: a bit below average

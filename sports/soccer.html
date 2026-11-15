@@ -203,6 +203,7 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
       <button class="nav" data-tab="teams" data-label="Teams" aria-label="Teams"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 5-3 8.5-7 10-4-1.5-7-5-7-10V6z"/></svg></span>Teams</button>
       <button class="nav" data-tab="season" data-label="Stats" aria-label="Stats"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg></span>Stats</button>
       <button class="nav" data-tab="model" data-label="Model accuracy" aria-label="Model accuracy"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/></svg></span>Model</button>
+      <button class="nav" data-tab="analytics" data-label="Analytics" aria-label="Analytics"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16"/><path d="M7 16v-5M12 16V6M17 16v-8"/></svg></span>Analytics</button>
       <button class="nav" data-tab="news" data-label="News" aria-label="News"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h10M7 17h6"/></svg></span>News</button>
     </div>
     <div class="grow"></div>
@@ -267,6 +268,7 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
     <section id="view-teams" class="hidden"><div id="teams"></div></section>
     <section id="view-season" class="hidden"><div id="season"></div></section>
     <section id="view-model" class="hidden"><div id="modelTrack"></div></section>
+    <section id="view-analytics" class="hidden"><div id="analytics"></div></section>
     <section id="view-news" class="hidden"><div class="news" id="news"></div></section>
     <p class="note" style="text-align:center;margin-top:28px">Data from ESPN’s public soccer feeds · updates every 15s while matches are live, otherwise every 60s · times in your local time zone</p>
   </main>
@@ -286,6 +288,7 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
 </div>
 <div class="toasts" id="toasts"></div>
 <script src="../learn/predict.js"></script>
+<script src="analytics.js"></script>
 <script>
 (() => {
 'use strict';
@@ -2225,7 +2228,7 @@ function schedule() {
   state.nextAt = Date.now() + ms;
   state.timer = setTimeout(tick, ms);
 }
-const VIEWS = ['scores', 'mine', 'odds', 'picks', 'standings', 'teams', 'season', 'model', 'news'];
+const VIEWS = ['scores', 'mine', 'odds', 'picks', 'standings', 'teams', 'season', 'model', 'news', 'analytics'];
 function setTab(tab) {
   if (!VIEWS.includes(tab)) tab = 'scores';
   state.tab = tab;
@@ -2241,6 +2244,7 @@ function setTab(tab) {
   else if (tab === 'season') loadSeason(!!state.stats[SET.focus]).then(schedule);
   else if (tab === 'news') loadNews(!!state.news[SET.focus]).then(schedule);
   else if (tab === 'model') { renderTracker(); schedule(); }
+  else if (tab === 'analytics') { if (window.SidelineAnalytics) SidelineAnalytics.render(); schedule(); }
   else if (tab === 'mine') loadMine(!!state.mine).then(schedule);
   else if (tab === 'picks') { if (!state.events.length) loadScores(true).then(renderPicks); loadPicks().then(schedule); }
   else if (tab === 'odds') { if (state.events.length) renderOdds(); else $('#oddsBoard').innerHTML = '<div class="skeleton" style="height:300px"></div>'; loadScores(true).then(schedule); }
