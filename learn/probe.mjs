@@ -1,23 +1,24 @@
-// temporary: what TheRundown's free plan gives us — sports, sportsbooks, and one day of events
+// temporary: rate-limited probe — markets, past events, quota
 const KEY = process.env.RUNDOWN_KEY, B = 'https://therundown.io/api/v2';
-const get = async (p) => { try { const r = await fetch(B + p, { headers: { 'X-TheRundown-Key': KEY } }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {} return { s: r.status, j, t: t.slice(0, 300).replace(/\s+/g, ' '), rl: ['x-ratelimit-remaining', 'x-ratelimit-limit', 'x-plan', 'x-quota-remaining'].map(h => r.headers.get(h)).filter(Boolean).join('|') }; } catch (e) { return { s: 'ERR', t: e.message }; } };
-const sp = await get('/sports');
-console.log('SPORTS', sp.s, sp.rl, JSON.stringify(sp.j?.sports || sp.j).slice(0, 700));
-const aff = await get('/affiliates');
-console.log('AFFILIATES', aff.s, JSON.stringify((aff.j?.affiliates || []).map(a => `${a.affiliate_id}:${a.affiliate_name}`)).slice(0, 1200));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let last = 0;
+const get = async p => { const w = 1300 - (Date.now() - last); if (w > 0) await sleep(w); last = Date.now();
+  const r = await fetch(B + p, { headers: { 'X-TheRundown-Key': KEY } }); const t = await r.text(); let j = null; try { j = JSON.parse(t); } catch {}
+  const hdr = {}; r.headers.forEach((v, k) => { if (/limit|quota|plan|credit|usage|remain/i.test(k)) hdr[k] = v; });
+  return { s: r.status, j, t: t.slice(0, 200).replace(/\s+/g, ' '), hdr }; };
 const today = new Date().toISOString().slice(0, 10);
-for (const [name, id] of [['NBA', 4], ['NFL', 2], ['NHL', 6], ['MLB', 3], ['EPL', 10]]) {
-  const r = await get(`/sports/${id}/events/${today}?market_ids=1,2,3&main_line=true&offset=300`);
-  const ev = r.j?.events?.[0];
-  console.log(`\n== ${name}(${id})`, r.s, r.rl, 'events', r.j?.events?.length ?? r.t.slice(0, 160));
-  if (ev) {
-    console.log('  keys', Object.keys(ev).join(','));
-    console.log('  teams', JSON.stringify(ev.teams || ev.teams_normalized || ev.participants).slice(0, 400));
-    console.log('  when', ev.event_date || ev.date_event, 'id', ev.event_id, 'score', JSON.stringify(ev.score).slice(0, 220));
-    const L = ev.lines || ev.markets || ev.odds;
-    console.log('  lines', JSON.stringify(L).slice(0, 1100));
-  }
+let r = await get(`/sports/2/events/${today}?market_ids=1,2,3&main_line=true&offset=300`);
+console.log('NFL today', r.s, JSON.stringify(r.hdr), 'events', r.j?.events?.length ?? r.t);
+const e = r.j?.events?.[0];
+if (e) { console.log('  markets', JSON.stringify((e.markets || []).map(m => ({ id: m.market_id, name: m.name, parts: (m.participants || []).map(p => ({ n: p.name, line: p.lines?.[0]?.spread ?? p.lines?.[0]?.total ?? null, books: Object.keys(p.lines?.[0]?.prices || {}) })) }))).slice(0, 1400)); }
+for (const d of ['2026-11-14', '2026-10-20', '2026-01-15']) {
+  const p = await get(`/sports/4/events/${d}?market_ids=1&main_line=true&offset=300`);
+  const ev = p.j?.events?.[0];
+  console.log('PAST nba', d, p.s, 'events', p.j?.events?.length ?? p.t.slice(0, 120), ev ? `first ${ev.teams_normalized?.map(x => x.abbreviation).join('@')} books ${JSON.stringify(Object.keys(ev.markets?.[0]?.participants?.[0]?.lines?.[0]?.prices || {}))} status ${ev.score?.event_status}` : '');
 }
-const old = await get(`/sports/4/events/2026-01-15?market_ids=1,2,3&main_line=true&offset=300`);
-console.log('\nPAST NBA 2026-01-15', old.s, 'events', old.j?.events?.length ?? old.t.slice(0, 200));
-if (old.j?.events?.[0]) { const e = old.j.events[0]; console.log('  past sample', JSON.stringify({ id: e.event_id, d: e.event_date, t: e.teams_normalized?.map(x => x.abbreviation), lines: Object.keys(e.lines || {}) }).slice(0, 400)); const cl = await get(`/events/${e.event_id}/closing`); console.log('  closing', cl.s, JSON.stringify(cl.j).slice(0, 500)); }
+const ev2 = (await get(`/sports/4/events/2026-11-14?market_ids=1&main_line=true&offset=300`)).j?.events?.[0];
+if (ev2) { const c = await get(`/events/${ev2.event_id}/closing`); console.log('CLOSING', c.s, JSON.stringify(c.j).slice(0, 600)); }
+const o = await get(`/sports/4/events/${today}/opening?market_ids=1`);
+console.log('OPENING', o.s, o.t.slice(0, 200));
+const all = await get(`/sports/events/${today}?market_ids=1&main_line=true&offset=300`);
+console.log('ALL SPORTS one call', all.s, 'events', all.j?.events?.length ?? all.t.slice(0, 150), all.j?.events ? JSON.stringify([...new Set(all.j.events.map(x => x.sport_id))]) : '');
