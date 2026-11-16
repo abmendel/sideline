@@ -270,33 +270,6 @@ function evalOf(rows, S) {        // the same report card the Model tab has alwa
   const months = {}; rows.forEach(r => { const k = `${r.d.slice(0, 4)}-${r.d.slice(4, 6)}`; (months[k] = months[k] || []).push(r); });
   return { all: sum(rows), season: sum(rows.filter(r => r.season === cur)), last30: sum(rows.filter(r => r.d >= cutoff)), months: Object.entries(months).sort().slice(-14).map(([m, l]) => ({ m, ...sum(l) })), ...trackerOf(rows, S) };
 }
-/* units: 1 unit staked on the model's own pick in every game at the closing line (and a few variations).
-   rows: { d, season, ml (closing price of the pick), mlOpen, won, value: { ml, won } | null } */
-const payout = ml => ml > 0 ? ml / 100 : 100 / -ml;
-function unitsOf(rows) {
-  const sum = list => { const g = list.filter(r => r.ml != null); let u = 0, w = 0; g.forEach(r => { if (r.won) { u += payout(r.ml); w++; } else u -= 1; }); return { n: g.length, w, l: g.length - w, units: +u.toFixed(2), roi: g.length ? +(u / g.length).toFixed(4) : null }; };
-  if (!rows.length) return null;
-  const cur = rows[rows.length - 1].season, cutoff = ymd(new Date(Date.now() - 30 * 864e5));
-  const season = rows.filter(r => r.season === cur);
-  let run = 0; const pts = [];
-  season.forEach(r => { if (r.ml == null) return; run += r.won ? payout(r.ml) : -1; pts.push([r.d, +run.toFixed(2)]); });
-  const step = Math.max(1, Math.ceil(pts.length / 90)), series = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
-  return { all: sum(rows), season: sum(season), last30: sum(rows.filter(r => r.d >= cutoff)), fav: sum(rows.filter(r => r.ml < 0)), dog: sum(rows.filter(r => r.ml > 0)),
-    open: sum(rows.filter(r => r.mlOpen != null).map(r => ({ ...r, ml: r.mlOpen }))), value: sum(rows.filter(r => r.value).map(r => ({ ml: r.value.ml, won: r.value.won }))), valueCut: .03, curSeason: cur, series };
-}
-function unitRowsUS(ev, box) {
-  return ev.map(x => { const o = box[x.id]?.o; if (!o) return null;
-    const home = x.p > .5, won = home === !!x.y, row = { d: x.d, season: x.season, ml: (home ? o.h : o.a)[1], mlOpen: (home ? o.h : o.a)[0], won, value: null };
-    if (x.mkH != null && Math.abs(x.p - x.mkH) >= .03) { const vh = x.p > x.mkH, ml = (vh ? o.h : o.a)[1]; if (ml != null) row.value = { ml, won: vh === !!x.y }; }
-    return row; }).filter(Boolean);
-}
-function unitRowsSoccer(ev, box) {
-  const K = { H: 'h', D: 'd', A: 'a' };
-  return ev.map(x => { const o = box[x.id]?.o; if (!o || !o.d) return null;
-    const pk = pick3(x.pr), row = { d: x.d, season: x.season, ml: o[K[pk]][1], mlOpen: o[K[pk]][0], won: pk === x.res, value: null };
-    if (x.mk) { const best = ['H', 'D', 'A'].map(k => ({ k, e: x.pr[K[k]] - x.mk[K[k]] })).sort((a, b) => b.e - a.e)[0]; if (best.e >= .03 && o[K[best.k]][1] != null) row.value = { ml: o[K[best.k]][1], won: best.k === x.res }; }
-    return row; }).filter(Boolean);
-}
 function trainUSv2(sp, store, box, S, log) {
   const tune = tuneUS(sp, store.games, box, S, log);
   const r = walkUS(sp, store.games, box, S, tune.P);
@@ -322,7 +295,7 @@ function trainUSv2(sp, store, box, S, log) {
   return { sport: sp, version: 2, updated: new Date().toISOString(), features: r.list, w: r.w.map(v => +v.toFixed(4)), sigma: +r.sigma.toFixed(3), rest: S.rest, params: tune.P,
     games: r.rows, seasons: r.seasons, curSeason: r.curSeason, teams, tables, eval: evalOf(rows, S),
     blend: blend ? { ...blend, wModel: blend.wm, wMarket: blend.wk, accModel: holdout.model.acc, accMarket: holdout.market.acc, accBlend: holdout.blend.acc } : null,
-    compare: { old: tune.old, new: tune.score, holdout }, units: unitsOf(unitRowsUS(ev, box)), snapshots: snaps, _wf: r.wf };
+    compare: { old: tune.old, new: tune.score, holdout }, snapshots: snaps, _wf: r.wf };
 }
 function trainSoccerV2(lg, store, box, S, log) {
   const best = tuneSoccer(lg, store.games, box, S);
@@ -337,7 +310,7 @@ function trainSoccerV2(lg, store, box, S, log) {
   const cur = r.seasons[r.seasons.length - 1], teams = {};
   Object.keys(r.T).filter(r.real).forEach(id => { const t = r.T[id], k = t.season != null && cur != null && t.season !== cur ? best.P.carry : 1; teams[id] = { att: r4(t.att * k), def: r4(t.def * k) }; });
   return { sport: lg, version: 2, kind: 'soccer', updated: new Date().toISOString(), mu: r4(r.mu), home: r4(r.home), rho: best.P.rho, params: best.P, games: r.wf.length, seasons: r.seasons, curSeason: cur, teams,
-    eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, units: unitsOf(unitRowsSoccer(ev, box)), snapshots: Object.keys(store.snaps).length, _wf: r.wf };
+    eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length, _wf: r.wf };
 }
 
 const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500 };

@@ -47,7 +47,6 @@
     [/brier/i, 'Brier score: how far the predicted chances were from what happened. 0 is perfect; always saying 50/50 scores 0.25.'],
     [/log loss/i, 'Log loss: like Brier score, but punishes confident wrong picks harder. Lower is better.'],
     [/fair win|\(fair\)/i, 'Fair chance: the win chance the odds imply after removing the sportsbook’s built-in margin.'],
-    [/\bunits?\b/i, 'Unit: one equal-sized bet, whatever amount you choose. +2.5u means you’d be up two and a half bets.'],
     [/back-to-back/i, 'Back-to-back: the second game in two days.'],
     [/calibration/i, 'Calibration: when the model says 70%, does that happen about 70% of the time?'],
     [/\bFIP\b/, 'FIP: a pitcher’s runs allowed per nine innings judged only on strikeouts, walks and home runs. Lower is better.'],
