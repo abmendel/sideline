@@ -1,0 +1,62 @@
+/* =====================================================================
+   Sideline readability: larger small text, stronger contrast, calmer
+   tables, grouped navigation and tucked-away fine print (ease.js).
+   Loaded last, so it only refines what the other stylesheets set.
+   ===================================================================== */
+:root{--dim:#5c5c66;--muted:#4f4f58}
+[data-theme=dark]{--dim:#a9a9b2;--muted:#bcbcc4}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){--dim:#a9a9b2;--muted:#bcbcc4}}
+
+/* small text: nothing important below 12.5px, with room to breathe */
+.note,.betfine,.muted,.sub,.sublabel{font-size:13px;line-height:1.55}
+.tile .s,.tile .k,.mc-tiles span,.ptot span,.mprow .pt span,.mprow .pp span,.probnums,.chip{font-size:12.5px}
+.mc-tiles span,.ptot span{line-height:1.4}
+.note,.betfine,p.muted,details.how p{max-width:78ch}
+.ph .sub{font-size:13px}
+.sechead .sub{line-height:1.45}
+.score,.tile .v,.mc-tiles b,.ptot b,table td,.pp b{font-variant-numeric:tabular-nums}
+
+/* units */
+.u-pos{color:var(--good)!important;font-weight:600}
+.u-neg{color:var(--bad)!important;font-weight:600}
+
+/* sidebar: sections with labels */
+.navlabel{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding:14px 12px 4px}
+.navlabel:first-child{padding-top:4px}
+@media (max-width:760px){.navlabel{display:none}}
+
+/* fine print lives behind a "How this works" toggle */
+details.how{margin-top:12px}
+details.how>summary{display:inline-flex;align-items:center;gap:6px;cursor:pointer;list-style:none;font-size:13px;font-weight:500;color:var(--acc-text);padding:5px 10px;margin-left:-10px;border-radius:8px}
+details.how>summary::-webkit-details-marker{display:none}
+details.how>summary::before{content:"›";display:inline-block;font-size:16px;line-height:1;transition:transform .2s}
+details.how[open]>summary::before{transform:rotate(90deg)}
+details.how>summary:hover{background:rgba(var(--fg),.07)}
+details.how>*:not(summary){margin-top:6px!important}
+details.how p{color:var(--dim);font-size:13px;line-height:1.55;margin:6px 0 0}
+
+/* tables: easier to scan across a row and to scroll sideways */
+.tbl-wrap table td,.tbl-wrap table th{padding-top:10px;padding-bottom:10px}
+.tbl-wrap table tbody tr:nth-child(even) td{background:rgba(var(--fg),.028)}
+.tbl-wrap table tbody tr:hover td{background:rgba(var(--fg),.07)}
+.tbl-wrap table th{font-size:12.5px;white-space:nowrap}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover,th.sorted{color:var(--text)}
+@media (max-width:900px){
+  .tbl-wrap{-webkit-overflow-scrolling:touch}
+  .tbl-wrap table td:first-child,.tbl-wrap table th:first-child{position:sticky;left:0;z-index:1;background:var(--g-pane-strong,var(--surface));-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px)}
+}
+
+/* terms with a plain-language explanation on hover or tap */
+.term{text-decoration:underline dotted;text-underline-offset:3px;text-decoration-color:rgba(var(--fg),.4);cursor:help}
+
+/* keyboard focus is always visible */
+:focus-visible{outline:2.5px solid var(--acc);outline-offset:2px;border-radius:8px}
+
+/* back to top */
+#toTop{position:fixed;right:22px;bottom:22px;z-index:30;width:44px;height:44px;border-radius:50%;border:0;cursor:pointer;display:grid;place-items:center;font-size:18px;color:var(--text);
+  background:var(--g-pane-strong,var(--surface));-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:inset 0 0 0 1px var(--g-edge,transparent),0 10px 26px -10px rgba(0,0,0,.4);opacity:0;transform:translateY(10px);pointer-events:none;transition:opacity .2s,transform .2s}
+#toTop.show{opacity:1;transform:none;pointer-events:auto}
+@media (max-width:760px){#toTop{bottom:calc(96px + env(safe-area-inset-bottom));right:14px} .pillbtn,.seg button{min-height:38px}}
+.mc-tiles>div>span,.ptot>div>span{display:block}
+.mc-tiles span span,.ptot span span,.mptot span span{display:inline!important}

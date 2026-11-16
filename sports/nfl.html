@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="sideline.css">
 <link rel="stylesheet" href="motion.css">
 <link rel="stylesheet" href="glass.css">
+<link rel="stylesheet" href="ease.css">
 <style>
 /* NFL-only components (field diagrams, sport-specific stats) */
 .avatar .ini{font-style:normal}
@@ -158,6 +159,7 @@
 <div class="toasts" id="toasts"></div>
 <script src="../learn/predict.js"></script>
 <script src="analytics.js"></script>
+<script src="units.js"></script>
 <script>
 (() => {
 'use strict';
@@ -2787,6 +2789,7 @@ function renderTracker() {
       ${tile('Home team every time', pctS(E.all?.homeAcc ?? E.base?.home), edge != null ? `model is ${edge >= 0 ? '+' : ''}${(edge * 100).toFixed(1)} pts better` : 'the simplest baseline')}
       ${tile('Brier score', E.all?.brier != null ? E.all.brier.toFixed(3) : '—', 'lower is better · a coin flip scores 0.250')}
     </div>`;
+  if (window.SidelineUnits) h += SidelineUnits.panel(M, 'game');
   // accuracy over time
   const weeks = (E.weeks || []).filter(w => w.n >= 3);
   if (weeks.length) {
@@ -3014,7 +3017,7 @@ function parlayHistory(n, curKey) {
       <span class="hl">${L.map(l => `<span class="hleg ${l.result === 'W' ? 'w' : l.result === 'L' ? 'l' : ''}" title="${esc((l.team?.shortDisplayName || '') + ' to win' + (l.final ? ' · ' + l.final : ''))}">${logoImg(l.team)}${esc(l.team?.abbreviation || '')}${l.result === 'W' ? ' ✓' : l.result === 'L' ? ' ✗' : ''}</span>`).join('')}</span>
       <span class="po">${esc(fmtAm(amFromDec(dec)))}</span>${out === 'W' ? '<span class="chip win">✓ Hit</span>' : out === 'L' ? `<span class="chip loss">✗ ${L.filter(l => l.result === 'W').length}/${L.length}</span>` : '<span class="chip pre">Pending</span>'}</div>`;
   }).join('');
-  return `<div class="sublabel">Past ${state.parMode === 'value' ? 'value ' : ''}parlays${R.n ? ` · ${n}-leg record <b style="color:var(--text)">${R.w}–${R.n - R.w}</b> · legs won ${R.ln ? Math.round(R.lw / R.ln * 100) : 0}% (${R.lw}/${R.ln})` : ''}</div><div class="phists">${rows}</div>`;
+  return `<div class="sublabel">Past ${state.parMode === 'value' ? 'value ' : ''}parlays${R.n ? ` · ${n}-leg record <b style="color:var(--text)">${R.w}–${R.n - R.w}</b> · legs won ${R.ln ? Math.round(R.lw / R.ln * 100) : 0}% (${R.lw}/${R.ln})${window.SidelineUnits ? SidelineUnits.parTag(Object.values(PST()), n) : ''}` : ''}</div><div class="phists">${rows}</div>`;
 }
 
 /* =====================================================================
@@ -3056,7 +3059,7 @@ async function gradeModelPicks() {
   } finally { mpGradeBusy = false; }
   return ch;
 }
-function mpRecord(list) { const g = list.filter(m => m.result === 'W' || m.result === 'L'), w = g.filter(m => m.result === 'W').length; return { w, l: g.length - w, n: g.length, pct: g.length ? Math.round(w / g.length * 100) : null }; }
+function mpRecord(list) { const g = list.filter(m => m.result === 'W' || m.result === 'L'), w = g.filter(m => m.result === 'W').length; return { w, l: g.length - w, n: g.length, pct: g.length ? Math.round(w / g.length * 100) : null, u: window.SidelineUnits ? SidelineUnits.tag(list) : '' }; }
 const mpDay = k => new Date(+k.slice(0, 4), +k.slice(4, 6) - 1, +k.slice(6, 8));
 async function renderModelPicks() {
   const box = $('#mpBox'); if (!box) return;
@@ -3081,7 +3084,7 @@ async function renderModelPicks() {
     const past = days.filter(d => !shown.includes(d)).slice(0, 14);
     const pastHtml = past.length ? `<div class="sublabel">Earlier days</div><div class="phists">${past.map(d => { const L = all.filter(m => m.day === d).sort((a, b) => b.p - a.p), r = mpRecord(L);
       return `<div class="phist mph"><span class="d">${esc(mpDay(d).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}</span><span class="hl">${L.map(m => `<span class="hleg ${m.result === 'W' ? 'w' : m.result === 'L' ? 'l' : ''}" data-ev="${esc(m.evId)}" title="${esc((m.team?.shortDisplayName || '') + ' to win · ' + Math.round(m.p * 100) + '%' + (m.final ? ' · ' + m.final : ''))}">${logoImg(m.team)}${esc(m.team?.abbreviation || '')}${m.result === 'W' ? ' ✓' : m.result === 'L' ? ' ✗' : ''}</span>`).join('')}</span><span class="po">${r.n ? `${r.w}–${r.l}` : ''}</span>${r.n === L.length && r.n ? `<span class="chip ${r.w >= r.l ? 'win' : 'loss'}">${r.pct}%</span>` : '<span class="chip pre">Pending</span>'}</div>`; }).join('')}</div>` : '';
-    const tile = (k, r, s) => `<div><b>${r.n ? `${r.w}–${r.l}` : '—'}</b><span>${k}${r.n ? ` · ${r.pct}%` : ''}</span>${s ? `<span>${s}</span>` : ''}</div>`;
+    const tile = (k, r, s) => `<div><b>${r.n ? `${r.w}–${r.l}` : '—'}</b><span>${k}${r.n ? ` · ${r.pct}%` : ''}</span>${r.u ? `<span>${r.u} at 1 unit a pick</span>` : ''}${s ? `<span>${s}</span>` : ''}</div>`;
     box.innerHTML = `<div class="panel glass parlay"><div class="ph"><span class="pic">🧠</span><h3>Model’s picks</h3><span class="sub">the side our model favors in every game · ✓/✗ after the final</span></div>
       ${all.length ? `<div class="ptot mptot">${tile('All picks', R)}${tile('Last 7 days', R7)}${tile('65%+ confident', RC)}</div>${shown.map(section).join('')}${pastHtml}` : '<p class="muted" style="margin:0">The site records the model’s pick for every game each hour before tip-off and grades it after the final. The first picks appear here shortly.</p>'}
       <p class="muted" style="margin:10px 0 0;font-size:11.5px;line-height:1.45">Each pick is the team with the higher win chance from our model blended with DraftKings (margin removed). Picks lock when their game starts and are recorded on the site every hour, so the record is the same on every device. For fun only · 21+ · 1-800-GAMBLER</p></div>`;
@@ -3296,6 +3299,7 @@ first.then(() => safe(watch())).then(schedule);   // alerts start watching which
 })();
 </script>
 <script src="shell.js"></script>
+<script src="ease.js"></script>
 <script src="motion.js"></script>
 </body>
 </html>
