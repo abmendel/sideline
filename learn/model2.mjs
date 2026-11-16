@@ -26,6 +26,7 @@ const priorFor = (f, S) => ({ home: S.hfa / 100 * S.sd / 4, elo: S.sd / 4, margi
 
 /* =============================================================== US sports */
 function gameInputs(kind, g, b, H, A) {
+  if (b && b.n) return b.n;                       // the injury report and starters as they stood before the game
   const inp = {}, t = b && b.t;
   if (!t) return inp;
   const th = t[g.h], ta = t[g.a];
@@ -43,6 +44,9 @@ function gameInputs(kind, g, b, H, A) {
   return inp;
 }
 function learnFromBox(kind, g, b, H, A, tables) {
+  const e = b && b.e;
+  if (e && kind === 'nfl') { const v = e[0] - e[1]; H.epa += v; H.eg++; A.epa -= v; A.eg++; }
+  if (e && kind === 'nhl') { const v = e[0] - e[1]; H.xg += v; H.xn++; A.xg -= v; A.xn++; }
   const t = b && b.t; if (!t) return;
   const th = t[g.h], ta = t[g.a];
   if (kind === 'nba') {
@@ -103,7 +107,7 @@ export function walkUS(sport, games, box, S, P, feats) {
   const St = { features: list, rest: S.rest, tables };
   const T = {}, team = (id, season) => {
     let t = T[id]; if (!t) t = T[id] = newTeam(season);
-    if (season != null && t.season != null && season !== t.season) { t.elo = 1500 + (t.elo - 1500) * (1 - CARRY); t.msum = 0; t.gp = 0; t.last = []; t.net *= .3; t.ng *= .3; t.sd *= .3; t.sg *= .3; t.ypp *= .3; t.yg *= .3; t.season = season; }
+    if (season != null && t.season != null && season !== t.season) { t.elo = 1500 + (t.elo - 1500) * (1 - CARRY); t.msum = 0; t.gp = 0; t.last = []; t.net *= .3; t.ng *= .3; t.sd *= .3; t.sg *= .3; t.ypp *= .3; t.yg *= .3; t.xg *= .3; t.xn *= .3; t.epa *= .3; t.eg *= .3; t.season = season; }
     if (t.season == null) t.season = season;
     return t;
   };
@@ -163,7 +167,12 @@ export function fitBlendUS(rows) {
   return { blend: { a: r4(all[0]), wm: r4(all[1]), wk: r4(all[2]), wv: r4(all[3]), n: R.length }, holdout };
 }
 
-export function tuneUS(sport, games, box, S, log) {
+export function tuneUS(sport, games, box, S, log, prev) {
+  if (prev) {                                   // settings tuned within the last week: reuse them, just refit
+    const r = walkUS(sport, games, box, S, prev.P), sc = scoreUS(evalRows(r.wf, r.seasons));
+    log && log(`${sport}: reusing tuned settings ${JSON.stringify(prev.P)} · log loss ${sc.logloss} · right ${(sc.acc * 100).toFixed(1)}% on ${sc.n} games`);
+    return { P: prev.P, score: sc, old: prev.old, tunedAt: prev.tunedAt };
+  }
   const grid = [];
   for (const k of [.4, .6, 1, 1.6, 2.4]) for (const h of [.3, .6, 1, 1.4]) for (const carry of [.15, .3, .5, .7]) for (const lam of [.25, .5, 1, 2]) grid.push({ k, h, carry, lam });
   let best = null;
@@ -175,7 +184,7 @@ export function tuneUS(sport, games, box, S, log) {
   const legacy = walkUS(sport, games, box, S, { k: 1, h: 1, carry: S.carry, lam: 1 }, LEGACY);
   const old = scoreUS(evalRows(legacy.wf, legacy.seasons));
   log && log(`${sport}: tuned ${JSON.stringify(best.P)} · log loss ${best.sc.logloss} (old ${old.logloss}) · right ${(best.sc.acc * 100).toFixed(1)}% (old ${(old.acc * 100).toFixed(1)}%) on ${best.sc.n} games`);
-  return { P: best.P, score: best.sc, old };
+  return { P: best.P, score: best.sc, old, tunedAt: new Date().toISOString() };
 }
 
 /* =============================================================== soccer */
@@ -199,7 +208,8 @@ export function walkSoccer(lg, games, box, S, P) {
     const o = b && b.o, close = o && o.d ? fair(o.h[1], o.a[1], o.d[1]) : null, open = o && o.d && o.h[0] != null && o.a[0] != null && o.d[0] != null ? fair(o.h[0], o.a[0], o.d[0]) : null;
     wf.push({ id: g.id, date: g.date, d: dayOf(g.date), season: g.season, h: g.h, a: g.a, hs: g.hs, as: g.as, pr, res, lh, la, n: wf.length, mk: close, op: open });
     const th = b && b.t && b.t[g.h], ta = b && b.t && b.t[g.a];
-    const yh = th && th[1] != null ? (1 - P.sw) * g.hs + P.sw * .32 * th[1] : g.hs, ya = ta && ta[1] != null ? (1 - P.sw) * g.as + P.sw * .32 * ta[1] : g.as;
+    const xg = b && b.e;
+    const yh = xg ? (1 - P.sw) * g.hs + P.sw * xg[0] : th && th[1] != null ? (1 - P.sw) * g.hs + P.sw * .32 * th[1] : g.hs, ya = xg ? (1 - P.sw) * g.as + P.sw * xg[1] : ta && ta[1] != null ? (1 - P.sw) * g.as + P.sw * .32 * ta[1] : g.as;
     const eh = yh - lh, ea = ya - la, k = P.k * (H.gp < 6 || A.gp < 6 ? 1.6 : 1);
     H.att += k * eh; A.def += k * eh; A.att += k * ea; H.def += k * ea;
     mu += P.k * .05 * (eh + ea); if (!g.neutral) home += P.k * .03 * (eh - ea);
@@ -211,12 +221,14 @@ const pOf = (pr, res) => res === 'H' ? pr.h : res === 'D' ? pr.d : pr.a;
 const pick3 = pr => pr.h >= pr.a && pr.h >= pr.d ? 'H' : pr.a >= pr.d ? 'A' : 'D';
 export const scoreSoccer = (rows, f = r => r.pr) => ({ n: rows.length, logloss: r4(avg(rows.map(r => LL(pOf(f(r), r.res))))), acc: r4(avg(rows.map(r => pick3(f(r)) === r.res ? 1 : 0))) });
 const evalSoccer = (wf, seasons) => { const first = seasons.length > 1 ? seasons[1] : null; return wf.filter(r => r.n >= 120 && (first == null || r.season >= first)); };
-export function tuneSoccer(lg, games, box, S) {
+export function tuneSoccer(lg, games, box, S, prev) {
+  if (prev) { const r = walkSoccer(lg, games, box, S, prev.P), sc = scoreSoccer(evalSoccer(r.wf, r.seasons)); if (sc.n) return { P: prev.P, sc, tunedAt: prev.tunedAt }; }
   let best = null;
   for (const k of [.015, .025, .04, .06, .09]) for (const sw of [0, .35, .7]) for (const rho of [-.15, -.08, 0]) for (const carry of [.5, .75, .9]) {
     const P = { k, sw, rho, carry }, r = walkSoccer(lg, games, box, S, P), sc = scoreSoccer(evalSoccer(r.wf, r.seasons));
     if (sc.n && (!best || sc.logloss < best.sc.logloss)) best = { P, sc };
   }
+  if (best) best.tunedAt = new Date().toISOString();
   return best;
 }
 export function fitBlend3(rows) {

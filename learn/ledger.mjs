@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { SPORTS, SOCCER_LEAGUES, featuresFor, probs3, oddsOf, Phi, newTeam, fetchJSON } from './learn.mjs';
 const SM = createRequire(import.meta.url)('./predict.js');
+import { loadSnaps, saveSnaps } from './extra.mjs';
 
 const DATA = new URL('../data/', import.meta.url);
 const API = p => `https://site.api.espn.com/apis/site/v2/sports/${p}`;
@@ -140,12 +141,18 @@ async function runSport(sp, log) {
   let ch = 0;
   // 1. every game's pick: refresh while the game is still ahead
   const fresh = [], vfresh = [];
+  const snaps = M && M.version >= 2 ? await loadSnaps(sp) : null; let snapCh = 0;
   const inj = (sp === 'nba' || sp === 'nfl') && M && M.version >= 2 ? await injuriesFor(sp) : null;
   evs.forEach(ev => {
     const id = String(ev.id), cur = L.picks[id];
     if (stateOf(ev) !== 'pre' || oddStatus(ev) || started(ev, now)) return;
     if (locked(cur, now)) return;
-    const r = rate(ev, M, S, M && M.version >= 2 ? inputsFor(sp, ev, M, inj) : null); if (!r) return;
+    const inp = M && M.version >= 2 ? inputsFor(sp, ev, M, inj) : null;
+    if (snaps && inp) {          // what was known before the game, so the model can later train on exactly this
+      const slim = { ...inp }; ['outH', 'outA'].forEach(k => { if (slim[k]) slim[k] = slim[k].map(o => ({ id: o.id, sit: o.sit })); });
+      const sig = JSON.stringify(slim); if (!snaps[id] || JSON.stringify(snaps[id].inp) !== sig) { snaps[id] = { d: ev.date, t: now.toISOString(), inp: slim }; snapCh++; }
+    }
+    const r = rate(ev, M, S, inp); if (!r) return;
     const side = r.p.h >= r.p.a ? 'home' : 'away', t = side === 'home' ? r.home : r.away, op = side === 'home' ? r.away : r.home;
     const e = { evId: id, day: dayKey(ev.date), date: ev.date, side, team: slim(t.team), opp: slim(op.team), p: r4(r.p[side[0]]), model: r4(r.pm?.[side[0]]), market: r4(r.mk?.[side[0]]), ml: (side === 'home' ? r.o?.mlH : r.o?.mlA) ?? null, result: null, final: '' };
     if (S.mode === 'week') e.week = `${ev.season?.year}-${ev.season?.type}-${ev.week?.number}`;
@@ -154,6 +161,7 @@ async function runSport(sp, log) {
     if (!cur || cur.side !== e.side || Math.abs(cur.p - e.p) >= .002 || cur.ml !== e.ml || cur.date !== e.date) { L.picks[id] = e; ch++; }
     fresh.push(L.picks[id]);
   });
+  if (snaps && snapCh) await saveSnaps(sp, snaps);
   // 2. pick of the day (week for the NFL) and the day's parlay, from games not yet started
   const groups = {};
   fresh.forEach(e => (groups[S.mode === 'week' ? e.week : e.day] ||= []).push(e));

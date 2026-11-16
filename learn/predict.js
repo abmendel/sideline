@@ -13,7 +13,9 @@
      shots    NHL: shot differential per game, shrunk
      goalie   NHL: starting goalie's goals saved above average per 30 shots, shrunk toward average
      sp       MLB: starting pitcher's runs saved per start (fielding-independent pitching vs league), shrunk
+     xg       NHL: expected-goal differential per game from shot locations, shrunk
      ypp      NFL: yards-per-play margin, shrunk
+     epa      NFL: expected points added per play, offense minus opponent, shrunk
      qb       NFL: starting quarterback's adjusted net yards per attempt above average, shrunk
    Soccer — each team has an attack and a defence rating; expected goals λ = exp(μ + home + attack + opponent's
    defence leakiness); results come from two Poisson goal counts with the Dixon–Coles low-score correction.
@@ -30,9 +32,9 @@
 
   const FEATURES = {
     nba: ['home', 'elo', 'margin', 'form', 'rest', 'net', 'avail'],
-    nhl: ['home', 'elo', 'margin', 'form', 'rest', 'shots', 'goalie'],
+    nhl: ['home', 'elo', 'margin', 'form', 'rest', 'shots', 'xg', 'goalie'],
     mlb: ['home', 'elo', 'margin', 'form', 'sp'],
-    nfl: ['home', 'elo', 'margin', 'form', 'rest', 'ypp', 'qb']
+    nfl: ['home', 'elo', 'margin', 'form', 'rest', 'ypp', 'epa', 'qb']
   };
   const LEGACY = ['home', 'elo', 'margin', 'form', 'rest'];
   const kindOf = sport => /^(nba|nhl|mlb|nfl)$/.test(sport) ? sport : 'soccer';
@@ -40,7 +42,7 @@
   const SIT = s => /out|suspen|injured reserve|\bir\b/i.test(s || '') ? 1 : /doubt/i.test(s || '') ? .8 : /question|day-to-day|game.?time/i.test(s || '') ? .4 : /probable/i.test(s || '') ? .1 : 0;
 
   const newTeam = season => ({ elo: 1500, msum: 0, gp: 0, last: [], lastDate: null, season,
-    net: 0, ng: 0, rot: {}, sd: 0, sg: 0, lastG: null, ypp: 0, yg: 0, qb: null });
+    net: 0, ng: 0, rot: {}, sd: 0, sg: 0, lastG: null, ypp: 0, yg: 0, qb: null, xg: 0, xn: 0, epa: 0, eg: 0 });
 
   /* ---------- player / starter ratings (tables live in the model file) ---------- */
   const NBA_REPL = 8;                // game score per 36 minutes of a replacement-level player
@@ -87,6 +89,8 @@
         case 'goalie': return goalieQ(M, inp.gH || H.lastG) - goalieQ(M, inp.gA || A.lastG);
         case 'sp': return spValue(M, inp.spH) - spValue(M, inp.spA);
         case 'ypp': return H.ypp / (H.yg + 4) - A.ypp / (A.yg + 4);
+        case 'epa': return ((H.epa || 0) / ((H.eg || 0) + 4) - (A.epa || 0) / ((A.eg || 0) + 4)) * 10;   // expected points added per 10 plays
+        case 'xg': return (H.xg || 0) / ((H.xn || 0) + 8) - (A.xg || 0) / ((A.xn || 0) + 8);
         case 'qb': return qbValue(M, inp.qbH === undefined ? H.qb : inp.qbH) - qbValue(M, inp.qbA === undefined ? A.qb : inp.qbA);
         default: return 0;
       }

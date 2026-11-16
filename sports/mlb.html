@@ -540,7 +540,7 @@ function learnedParts(homeId, awayId, date, neutral, opt = {}) {
     const inputs = v2Inputs(M, homeId, awayId, opt);
     const r = SMX().predictUS(M, homeId, awayId, { date: date ? new Date(date) : new Date(), neutral, inputs }); if (!r) return null;
     const P = r.parts;
-    return { v2: true, home: P.home || 0, rating: (P.elo || 0) + (P.margin || 0) + (P.net || 0) + (P.shots || 0) + (P.ypp || 0), form: P.form || 0, rest: P.rest || 0,
+    return { v2: true, home: P.home || 0, rating: (P.elo || 0) + (P.margin || 0) + (P.net || 0) + (P.shots || 0) + (P.ypp || 0) + (P.epa || 0) + (P.xg || 0), form: P.form || 0, rest: P.rest || 0,
       avail: P.avail, goalie: P.goalie, sp: P.sp, qb: P.qb, inputs, sigma: M.sigma, n: M.games };
   }
   const H = M.teams[String(homeId)], A = M.teams[String(awayId)]; if (!H || !A) return null;
@@ -573,7 +573,7 @@ function applyLearned(pr, awayId, homeId, opt = {}) {
     if (sp === 'nfl') extra.push({ k: 'Quarterbacks', v: L.qb || 0, note: `expected starters${L.inputs.qbH === null ? ` · ${H.abbr} QB out` : ''}${L.inputs.qbA === null ? ` · ${A.abbr} QB out` : ''} · adjusted yards per attempt, learned` });
   }
   const factors = [
-    { k: 'Learned ratings', v: L.rating, note: L.v2 ? `Elo, margin and ${sp === 'nba' ? 'pace-adjusted efficiency' : sp === 'nhl' ? 'shot differential' : sp === 'nfl' ? 'yards per play' : 'run differential'} · learned from ${L.n.toLocaleString()} games` : `Elo and scoring margin, learned from ${L.n.toLocaleString()} games` },
+    { k: 'Learned ratings', v: L.rating, note: L.v2 ? `Elo, margin and ${sp === 'nba' ? 'pace-adjusted efficiency' : sp === 'nhl' ? 'shot quality' : sp === 'nfl' ? 'expected points per play' : 'run differential'} · learned from ${L.n.toLocaleString()} games` : `Elo and scoring margin, learned from ${L.n.toLocaleString()} games` },
     { k: homeK, v: opt.neutral ? 0 : L.home, note: opt.neutral ? 'neutral site' : `${H.abbr} at home · learned edge` },
     { k: 'Recent form', v: L.form, note: 'last 10 games · learned weight' },
     ...(LEARN.model.rest ? [{ k: 'Rest', v: L.rest, note: 'days off before the game · learned weight' }] : []),
@@ -612,7 +612,7 @@ function modelCard() {
   const U = INS.unit, d = INS.d, u1 = U.replace(/s$/, '');
   const LBL = { home: `home edge`, elo: `100 Elo points`, margin: `1 ${u1} of season margin per game`, form: `1 ${u1} of last-10 margin`, rest: `1 extra day of rest`,
     net: `1 point per 100 possessions of net rating`, avail: `1 game-score point of missing rotation players`, shots: `1 shot per game of shot differential`, goalie: `1 goal saved per 30 shots by the starting goalie`,
-    sp: `1 run saved per start by the starting pitcher`, ypp: `1 yard per play of margin`, qb: `1 adjusted net yard per attempt from the quarterback` };
+    sp: `1 run saved per start by the starting pitcher`, ypp: `1 yard per play of margin`, epa: `1 expected point per 10 plays`, xg: `1 expected goal per game from shot quality`, qb: `1 adjusted net yard per attempt from the quarterback` };
   const feats = M.features || ['home', 'elo', 'margin', 'form', 'rest'];
   const learned = feats.map((f, i) => (f === 'rest' && !M.rest) ? null : `${LBL[f] || f} ${fxd(w[i], f === 'margin' || f === 'form' ? 2 : d)} ${U}`).filter(Boolean);
   const C = M.compare, ho = C?.holdout;

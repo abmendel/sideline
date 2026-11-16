@@ -8,8 +8,11 @@
 // grade it walk-forward (every game predicted using only earlier games) and fit how much to trust
 // the model versus the betting market once enough snapshots have results.
 import fs from 'node:fs/promises';
+import { createRequire } from 'node:module';
+const SM = createRequire(import.meta.url)('./predict.js');
 import { backfill, loadBox, loadNamesFor } from './box.mjs';
 import { buildAnalytics } from './analytics.mjs';
+import { loadExtra, loadSnaps } from './extra.mjs';
 import { tuneUS, walkUS, evalRows, scoreUS, fitBlendUS, tuneSoccer, walkSoccer, evalSoccer, scoreSoccer, fitBlend3, pOf, pick3 } from './model2.mjs';
 
 const SPORTS = {
@@ -270,8 +273,10 @@ function evalOf(rows, S) {        // the same report card the Model tab has alwa
   const months = {}; rows.forEach(r => { const k = `${r.d.slice(0, 4)}-${r.d.slice(4, 6)}`; (months[k] = months[k] || []).push(r); });
   return { all: sum(rows), season: sum(rows.filter(r => r.season === cur)), last30: sum(rows.filter(r => r.d >= cutoff)), months: Object.entries(months).sort().slice(-14).map(([m, l]) => ({ m, ...sum(l) })), ...trackerOf(rows, S) };
 }
-function trainUSv2(sp, store, box, S, log) {
-  const tune = tuneUS(sp, store.games, box, S, log);
+const FRESH = 7 * 864e5;
+function trainUSv2(sp, store, box, S, log, prevM) {
+  const reuse = prevM && prevM.version >= 2 && prevM.params && prevM.tunedAt && Date.now() - new Date(prevM.tunedAt) < FRESH && JSON.stringify(prevM.features) === JSON.stringify(SM.FEATURES[sp]) && prevM.compare?.old;
+  const tune = tuneUS(sp, store.games, box, S, log, reuse ? { P: prevM.params, old: prevM.compare.old, tunedAt: prevM.tunedAt } : null);
   const r = walkUS(sp, store.games, box, S, tune.P);
   const ev = evalRows(r.wf, r.seasons);
   const { blend, holdout } = fitBlendUS(ev);
@@ -283,7 +288,7 @@ function trainUSv2(sp, store, box, S, log) {
   Object.keys(r.T).filter(r.real).forEach(id => {
     const t = r.team(id, r.curSeason);
     const rot = {}; Object.entries(t.rot || {}).forEach(([p, m]) => { if (m >= 4) rot[p] = +m.toFixed(1); });
-    teams[id] = { elo: +t.elo.toFixed(1), msum: t.msum, gp: t.gp, last: t.last, lastDate: t.lastDate, net: r4(t.net), ng: r4(t.ng), sd: r4(t.sd), sg: r4(t.sg), lastG: t.lastG, ypp: r4(t.ypp), yg: r4(t.yg), qb: t.qb, ...(Object.keys(rot).length ? { rot } : {}) };
+    teams[id] = { elo: +t.elo.toFixed(1), msum: t.msum, gp: t.gp, last: t.last, lastDate: t.lastDate, net: r4(t.net), ng: r4(t.ng), sd: r4(t.sd), sg: r4(t.sg), lastG: t.lastG, ypp: r4(t.ypp), yg: r4(t.yg), qb: t.qb, ...(t.eg ? { epa: r4(t.epa), eg: r4(t.eg) } : {}), ...(t.xn ? { xg: r4(t.xg), xn: r4(t.xn) } : {}), ...(Object.keys(rot).length ? { rot } : {}) };
   });
   const T = r.tables, inRot = new Set(Object.values(teams).flatMap(t => Object.keys(t.rot || {})));
   const pick = (o, keep, round) => Object.fromEntries(Object.entries(o).filter(([id, v]) => keep(id, v)).map(([id, v]) => [id, v.map(round)]));
@@ -292,13 +297,14 @@ function trainUSv2(sp, store, box, S, log) {
     : sp === 'mlb' ? { pitchers: pick(T.pitchers, (id, v) => v[0] >= 15, v => +v.toFixed(1)), lgFip: r4(T.lgFip), cFip: r4(T.cFip) }
     : { qbs: pick(T.qbs, (id, v) => v[0] >= 20, v => +v.toFixed(1)), lgAny: r4(T.lgAny) };
   const snaps = Object.keys(store.snaps).length;
-  return { sport: sp, version: 2, updated: new Date().toISOString(), features: r.list, w: r.w.map(v => +v.toFixed(4)), sigma: +r.sigma.toFixed(3), rest: S.rest, params: tune.P,
+  return { sport: sp, version: 2, updated: new Date().toISOString(), features: r.list, w: r.w.map(v => +v.toFixed(4)), sigma: +r.sigma.toFixed(3), rest: S.rest, params: tune.P, tunedAt: tune.tunedAt,
     games: r.rows, seasons: r.seasons, curSeason: r.curSeason, teams, tables, eval: evalOf(rows, S),
     blend: blend ? { ...blend, wModel: blend.wm, wMarket: blend.wk, accModel: holdout.model.acc, accMarket: holdout.market.acc, accBlend: holdout.blend.acc } : null,
     compare: { old: tune.old, new: tune.score, holdout }, snapshots: snaps, _wf: r.wf };
 }
-function trainSoccerV2(lg, store, box, S, log) {
-  const best = tuneSoccer(lg, store.games, box, S);
+function trainSoccerV2(lg, store, box, S, log, prevM) {
+  const reuse = prevM && prevM.version >= 2 && prevM.params && prevM.tunedAt && Date.now() - new Date(prevM.tunedAt) < FRESH;
+  const best = tuneSoccer(lg, store.games, box, S, reuse ? { P: prevM.params, tunedAt: prevM.tunedAt } : null);
   if (!best) return null;
   const r = walkSoccer(lg, store.games, box, S, best.P), ev = evalSoccer(r.wf, r.seasons);
   const { blend, holdout } = fitBlend3(ev);
@@ -309,7 +315,7 @@ function trainSoccerV2(lg, store, box, S, log) {
   const rows = r.wf.filter(x => x.n >= 40).map(x => { const pred = pick3(x.pr); return { id: x.id, date: x.date, d: x.d, season: x.season, h: x.h, a: x.a, hs: x.hs, as: x.as, pH: x.pr.h, pD: x.pr.d, pA: x.pr.a, pred, res: x.res, ok: pred === x.res, conf: Math.max(x.pr.h, x.pr.d, x.pr.a), brier: (x.pr.h - (x.res === 'H')) ** 2 + (x.pr.d - (x.res === 'D')) ** 2 + (x.pr.a - (x.res === 'A')) ** 2, ll: LLp(pOf(x.pr, x.res)), home: x.res === 'H', n: x.n, mk: x.mk }; });
   const cur = r.seasons[r.seasons.length - 1], teams = {};
   Object.keys(r.T).filter(r.real).forEach(id => { const t = r.T[id], k = t.season != null && cur != null && t.season !== cur ? best.P.carry : 1; teams[id] = { att: r4(t.att * k), def: r4(t.def * k) }; });
-  return { sport: lg, version: 2, kind: 'soccer', updated: new Date().toISOString(), mu: r4(r.mu), home: r4(r.home), rho: best.P.rho, params: best.P, games: r.wf.length, seasons: r.seasons, curSeason: cur, teams,
+  return { sport: lg, version: 2, kind: 'soccer', updated: new Date().toISOString(), mu: r4(r.mu), home: r4(r.home), rho: best.P.rho, params: best.P, tunedAt: best.tunedAt, games: r.wf.length, seasons: r.seasons, curSeason: cur, teams,
     eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length, _wf: r.wf };
 }
 
@@ -325,7 +331,11 @@ async function run(sp, log) {
   Object.keys(store.snaps).forEach(id => { if (!store.games[id]) delete store.snaps[id]; });
   await writeJSON(`${sp}-games.json`, store);
   const box = await backfill(sp, S, store, fetchJSON, log, BOXCAP[sp] || 900);
-  const model = S.draws ? trainSoccerV2(sp, store, box, S, log) : trainUSv2(sp, store, box, S, log);
+  const extra = await loadExtra(sp, S, store, log), snaps = S.draws ? {} : await loadSnaps(sp);
+  Object.entries(extra).forEach(([id, e]) => { (box[id] ||= {}).e = e; });                    // attached in memory only
+  Object.entries(snaps).forEach(([id, n]) => { if (store.games[id] && n.inp) (box[id] ||= {}).n = n.inp; });
+  const prevM = await readJSON(`model-${sp}.json`, null);
+  const model = S.draws ? trainSoccerV2(sp, store, box, S, log, prevM) : trainUSv2(sp, store, box, S, log, prevM);
   if (!model) { log(`${sp}: not enough games to train`); return null; }
   const wf = model._wf; delete model._wf;
   await writeJSON(`model-${sp}.json`, model);
