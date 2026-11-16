@@ -159,6 +159,7 @@
 <div class="toasts" id="toasts"></div>
 <script src="../learn/predict.js"></script>
 <script src="analytics.js"></script>
+<script src="books.js"></script>
 <script>
 (() => {
 'use strict';
@@ -3075,7 +3076,7 @@ async function renderModelPicks() {
     const rowOf = m => {
       const ev = evOf(m.evId), st = m.result ? 'post' : ev ? statusOf(ev).state : new Date(m.date) <= new Date() ? 'in' : 'pre';
       const chip = m.result === 'W' ? '<span class="chip win">✓ Won</span>' : m.result === 'L' ? '<span class="chip loss">✗ Lost</span>' : st === 'in' ? '<span class="chip live"><i></i>Live</span>' : st === 'post' ? '<span class="chip pre">Final · grading</span>' : `<span class="chip pre">${esc(new Date(m.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span>`;
-      return `<div class="mprow" data-ev="${esc(m.evId)}">${logoImg(m.team)}<div class="pt"><b>${esc(m.team?.shortDisplayName || m.team?.abbreviation)}</b><span>${m.side === 'home' ? 'vs' : '@'} ${esc(m.opp?.abbreviation || '')}${m.final ? ' · ' + esc(m.final) : ''}</span></div><div class="pp"><b>${Math.round(m.p * 100)}%</b><span>${m.ml != null ? esc(fmtAm(m.ml)) : 'no line'}</span></div>${chip}</div>`;
+      return `<div class="mprow" data-ev="${esc(m.evId)}">${logoImg(m.team)}<div class="pt"><b>${esc(m.team?.shortDisplayName || m.team?.abbreviation)}</b><span>${m.side === 'home' ? 'vs' : '@'} ${esc(m.opp?.abbreviation || '')}${m.final ? ' · ' + esc(m.final) : ''}</span></div><div class="pp"><b>${Math.round(m.p * 100)}%</b><span>${m.best && m.best.ml != null ? esc(({ dk: 'DraftKings', fd: 'FanDuel', mgm: 'BetMGM' }[m.best.b] || '') + ' ' + fmtAm(m.best.ml)) : m.ml != null ? esc(fmtAm(m.ml)) : 'no line'}</span></div>${chip}</div>`;
     };
     const section = d => { const L = all.filter(m => m.day === d).sort((a, b) => new Date(a.date) - new Date(b.date) || b.p - a.p), r = mpRecord(L);
       return `<div class="sublabel">${esc(d === today ? 'Today' : mpDay(d).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' }))}${r.n ? ` · ${r.w}–${r.l} so far` : ''}</div><div class="mplist">${L.map(rowOf).join('')}</div>`; };

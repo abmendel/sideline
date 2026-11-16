@@ -56,3 +56,11 @@ th.sortable:hover,th.sorted{color:var(--text)}
 @media (max-width:760px){#toTop{bottom:calc(96px + env(safe-area-inset-bottom));right:14px} .pillbtn,.seg button{min-height:38px}}
 .mc-tiles>div>span,.ptot>div>span{display:block}
 .mc-tiles span span,.ptot span span,.mptot span span{display:inline!important}
+
+/* sportsbook comparison on the Odds board */
+.bkrow{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:10px 0 2px;margin-top:6px;border-top:1px solid rgba(var(--fg),.08);font-size:13px}
+.bkrow .lbl{color:var(--dim);font-size:12.5px}
+.bkrow .bk{display:inline-flex;gap:10px;align-items:baseline;padding:5px 10px;border-radius:9px;background:rgba(var(--fg),.06);font-variant-numeric:tabular-nums}
+.bkrow .bk b{font-weight:600}
+.bkrow .bkbest{color:var(--good);font-weight:600}
+.bkrow .sub{font-size:12px}

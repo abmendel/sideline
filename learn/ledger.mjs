@@ -12,6 +12,7 @@ import { createRequire } from 'node:module';
 import { SPORTS, SOCCER_LEAGUES, featuresFor, probs3, oddsOf, Phi, newTeam, fetchJSON } from './learn.mjs';
 const SM = createRequire(import.meta.url)('./predict.js');
 import { loadSnaps, saveSnaps } from './extra.mjs';
+import { loadBooks, consensus } from './books.mjs';
 
 const DATA = new URL('../data/', import.meta.url);
 const API = p => `https://site.api.espn.com/apis/site/v2/sports/${p}`;
@@ -63,21 +64,22 @@ function inputsFor(sp, ev, M, inj) {
   return inp;
 }
 /* the model's numbers for one game, the same recipe the dashboards use: learned model blended with DraftKings (margin removed) */
-function rate(ev, M, S, inp) {
+function rate(ev, M, S, inp, bk) {
+  const cs = bk ? consensus(bk) : null, multi = cs && cs.n >= 2;      // two or more books: use their consensus as the market
   const { c, home, away } = compsOf(ev); if (!home || !away) return null;
   const h = String(home.team?.id ?? home.id), a = String(away.team?.id ?? away.id);
   const o = oddsOf(ev);
   if (M && M.version >= 2) {
     if (S.draws) {
-      const pm = SM.predictSoccer(M, h, a, { neutral: !!c?.neutralSite }), mk = o && o.fairD != null ? { h: o.fairH, d: o.fairD, a: o.fairA } : null;
+      const pm = SM.predictSoccer(M, h, a, { neutral: !!c?.neutralSite }), mk = multi && cs.d != null ? { h: cs.h, d: cs.d, a: cs.a } : o && o.fairD != null ? { h: o.fairH, d: o.fairD, a: o.fairA } : null;
       if (!pm && !mk) return null;
       const p = pm && mk ? SM.blend3(M.blend, pm, mk, openOf(ev)) : (pm || mk);
-      return { home, away, p, pm, mk, o };
+      return { home, away, p, pm, mk, o, cs };
     }
-    const r = SM.predictUS(M, h, a, { date: ev.date, neutral: !!c?.neutralSite, inputs: inp || {} }), mkH = o?.fairH ?? null, op = openOf(ev);
+    const r = SM.predictUS(M, h, a, { date: ev.date, neutral: !!c?.neutralSite, inputs: inp || {} }), mkH = multi ? cs.h : o?.fairH ?? null, op = openOf(ev);
     if (!r && mkH == null) return null;
     const pH = !r ? mkH : SM.blend2(M.blend, r.p, mkH, op ? op.h : null);
-    return { home, away, p: { h: pH, a: 1 - pH }, pm: r && { h: r.p, a: 1 - r.p }, mk: mkH == null ? null : { h: mkH, a: 1 - mkH }, o };
+    return { home, away, p: { h: pH, a: 1 - pH }, pm: r && { h: r.p, a: 1 - r.p }, mk: mkH == null ? null : { h: mkH, a: 1 - mkH }, o, cs };
   }
   let pm = null;
   if (M && (M.teams[h] || M.teams[a])) {
@@ -138,6 +140,7 @@ async function runSport(sp, log) {
   if (S.mode === 'week') { const cur = await fetchJSON(`${API(S.path)}/scoreboard?limit=300`); (cur?.events || []).forEach(ev => evs.push(ev)); }
   const byId = {}; evs.forEach(ev => { byId[String(ev.id)] = ev; });
   evs = Object.values(byId); LIVE = byId;
+  const BK = await loadBooks(sp, [[sp, evs]], log);
   let ch = 0;
   // 1. every game's pick: refresh while the game is still ahead
   const fresh = [], vfresh = [];
@@ -152,13 +155,14 @@ async function runSport(sp, log) {
       const slim = { ...inp }; ['outH', 'outA'].forEach(k => { if (slim[k]) slim[k] = slim[k].map(o => ({ id: o.id, sit: o.sit })); });
       const sig = JSON.stringify(slim); if (!snaps[id] || JSON.stringify(snaps[id].inp) !== sig) { snaps[id] = { d: ev.date, t: now.toISOString(), inp: slim }; snapCh++; }
     }
-    const r = rate(ev, M, S, inp); if (!r) return;
+    const r = rate(ev, M, S, inp, BK[id]); if (!r) return;
     const side = r.p.h >= r.p.a ? 'home' : 'away', t = side === 'home' ? r.home : r.away, op = side === 'home' ? r.away : r.home;
-    const e = { evId: id, day: dayKey(ev.date), date: ev.date, side, team: slim(t.team), opp: slim(op.team), p: r4(r.p[side[0]]), model: r4(r.pm?.[side[0]]), market: r4(r.mk?.[side[0]]), ml: (side === 'home' ? r.o?.mlH : r.o?.mlA) ?? null, result: null, final: '' };
+    const e = { evId: id, day: dayKey(ev.date), date: ev.date, side, team: slim(t.team), opp: slim(op.team), p: r4(r.p[side[0]]), model: r4(r.pm?.[side[0]]), market: r4(r.mk?.[side[0]]), ml: (side === 'home' ? r.o?.mlH : r.o?.mlA) ?? BK[id]?.dk?.[side === 'home' ? 0 : 1] ?? null, result: null, final: '' };
+    if (BK[id]) { e.books = BK[id]; e.best = r.cs?.best[side[0]] || null; }
     if (S.mode === 'week') e.week = `${ev.season?.year}-${ev.season?.type}-${ev.week?.number}`;
     if (r.mk) { const vs = ['home', 'away'].map(sd => ({ sd, edge: r.p[sd[0]] - r.mk[sd[0]] })).sort((x, y) => y.edge - x.edge)[0], vt = vs.sd === 'home' ? r.home : r.away, vo = vs.sd === 'home' ? r.away : r.home, vml = vs.sd === 'home' ? r.o?.mlH : r.o?.mlA;
       if (vs.edge > .01 && vml != null) vfresh.push({ evId: id, day: e.day, week: e.week, date: ev.date, side: vs.sd, team: slim(vt.team), opp: slim(vo.team), p: r4(r.p[vs.sd[0]]), market: r4(r.mk[vs.sd[0]]), edge: vs.edge, ml: vml, result: null, final: '' }); }
-    if (!cur || cur.side !== e.side || Math.abs(cur.p - e.p) >= .002 || cur.ml !== e.ml || cur.date !== e.date) { L.picks[id] = e; ch++; }
+    if (!cur || cur.side !== e.side || Math.abs(cur.p - e.p) >= .002 || cur.ml !== e.ml || cur.date !== e.date || JSON.stringify(cur.books) !== JSON.stringify(e.books)) { L.picks[id] = e; ch++; }
     fresh.push(L.picks[id]);
   });
   if (snaps && snapCh) await saveSnaps(sp, snaps);
@@ -210,16 +214,18 @@ async function runSoccer(log) {
     evs.forEach(ev => { byId[String(ev.id)] = ev; lgOf[String(ev.id)] = { lg, S, M }; });
   }
   LIVE = byId;
+  const BK = await loadBooks('soccer', SOCCER_LEAGUES.map(lg => [lg, Object.values(byId).filter(ev => lgOf[String(ev.id)].lg === lg)]), log);
   let ch = 0;
   const cands = [];
   Object.values(byId).forEach(ev => {
     const id = String(ev.id), { lg, S, M } = lgOf[id], cur = L.picks[id];
     if (stateOf(ev) !== 'pre' || oddStatus(ev) || started(ev, now)) return;
-    const r = rate(ev, M, S); if (!r) return;
+    const r = rate(ev, M, S, null, BK[id]); if (!r) return;
     const side = r.p.h >= r.p.a && r.p.h >= r.p.d ? 'home' : r.p.a >= r.p.d ? 'away' : 'draw', k = side === 'draw' ? 'd' : side[0];
     if (!locked(cur, now)) {
-      const e = { evId: id, lg, day: dayKey(ev.date), date: ev.date, side, home: slim(r.home.team), away: slim(r.away.team), p: r4(r.p[k]), ml: (side === 'home' ? r.o?.mlH : side === 'away' ? r.o?.mlA : r.o?.mlD) ?? null, result: null, final: '' };
-      if (!cur || cur.side !== e.side || Math.abs(cur.p - e.p) >= .002 || cur.ml !== e.ml || cur.date !== e.date) { L.picks[id] = e; ch++; }
+      const e = { evId: id, lg, day: dayKey(ev.date), date: ev.date, side, home: slim(r.home.team), away: slim(r.away.team), p: r4(r.p[k]), ml: (side === 'home' ? r.o?.mlH : side === 'away' ? r.o?.mlA : r.o?.mlD) ?? BK[id]?.dk?.[side === 'home' ? 0 : side === 'away' ? 1 : 2] ?? null, result: null, final: '' };
+      if (BK[id]) { e.books = BK[id]; e.best = r.cs?.best[k] || null; }
+      if (!cur || cur.side !== e.side || Math.abs(cur.p - e.p) >= .002 || cur.ml !== e.ml || cur.date !== e.date || JSON.stringify(cur.books) !== JSON.stringify(e.books)) { L.picks[id] = e; ch++; }
     }
     if (r.mk) [['home', r.home, r.away], ['away', r.away, r.home]].forEach(([s, t, op]) => {
       const kk = s[0], ml = s === 'home' ? r.o?.mlH : r.o?.mlA;

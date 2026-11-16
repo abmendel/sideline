@@ -26,11 +26,14 @@ jobs:
       - name: Record and grade picks
         continue-on-error: true
         run: node learn/ledger.mjs
+        env:
+          RUNDOWN_KEY: ${{ secrets.RUNDOWN_KEY }}
       - name: Commit the record
         run: |
           git config user.name "sideline-bot"
           git config user.email "sideline-bot@users.noreply.github.com"
           git add data/ledger-*.json
+          git add data/books-*.json 2>/dev/null || true
           git add data/extra/snap-*.json 2>/dev/null || true
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Record picks $(date -u +%Y-%m-%dT%H:%MZ)"

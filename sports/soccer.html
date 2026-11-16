@@ -291,6 +291,7 @@ td.zone::before{content:'';position:absolute;left:0;top:7px;bottom:7px;width:4px
 <div class="toasts" id="toasts"></div>
 <script src="../learn/predict.js"></script>
 <script src="analytics.js"></script>
+<script src="books.js"></script>
 <script>
 (() => {
 'use strict';
@@ -2000,7 +2001,7 @@ function mpHtml() {
   const rowOf = m => {
     const ev = state.events.find(e => String(e.id) === m.evId), st = m.result ? 'post' : ev ? statusOf(ev).state : new Date(m.date) <= new Date() ? 'in' : 'pre';
     const chip = m.result === 'W' ? '<span class="chip win">✓ Won</span>' : m.result === 'L' ? '<span class="chip loss">✗ Lost</span>' : st === 'in' ? '<span class="chip live"><i></i>Live</span>' : st === 'post' ? '<span class="chip pre">FT · grading</span>' : `<span class="chip pre">${esc(new Date(m.date).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }))}</span>`;
-    return `<div class="mprow" data-ev="${esc(m.evId)}" data-lg="${esc(m.lg)}">${m.side === 'draw' ? '<span class="logo-ph" style="display:grid;place-items:center;font-weight:700">X</span>' : logoImg(m[m.side])}<div class="pt"><b>${esc(pickName(m))}${m.side === 'draw' ? '' : ' to win'}</b><span>${esc(tName(m.home))} v ${esc(tName(m.away))} · ${esc(lgName(m.lg))}${m.final ? ' · ' + esc(m.final) : ''}</span></div><div class="pp"><b>${Math.round(m.p * 100)}%</b><span>${m.ml != null ? esc(fmtAm(m.ml)) : 'no line'}</span></div>${chip}</div>`;
+    return `<div class="mprow" data-ev="${esc(m.evId)}" data-lg="${esc(m.lg)}">${m.side === 'draw' ? '<span class="logo-ph" style="display:grid;place-items:center;font-weight:700">X</span>' : logoImg(m[m.side])}<div class="pt"><b>${esc(pickName(m))}${m.side === 'draw' ? '' : ' to win'}</b><span>${esc(tName(m.home))} v ${esc(tName(m.away))} · ${esc(lgName(m.lg))}${m.final ? ' · ' + esc(m.final) : ''}</span></div><div class="pp"><b>${Math.round(m.p * 100)}%</b><span>${m.best && m.best.ml != null ? esc(({ dk: 'DraftKings', fd: 'FanDuel', mgm: 'BetMGM' }[m.best.b] || '') + ' ' + fmtAm(m.best.ml)) : m.ml != null ? esc(fmtAm(m.ml)) : 'no line'}</span></div>${chip}</div>`;
   };
   const tile = (k, r) => `<div><b>${r.n ? `${r.w}–${r.l}` : '—'}</b><span>${k}${r.n ? ` · ${r.pct}%` : ''}</span></div>`;
   let body = '<p class="muted" style="margin:0">The site records the model’s call for every match in the big leagues each hour before kick-off and grades it at full time. Matches in other leagues you follow are added while the dashboard is open.</p>';
