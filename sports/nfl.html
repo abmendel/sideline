@@ -2817,7 +2817,7 @@ function renderTracker() {
     <div class="tiles glass" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));height:auto;margin-bottom:16px">
       ${tile(E.season?.n >= 20 ? 'This season' : 'All graded games', pctS(S.acc), `${(S.n || 0).toLocaleString()} games picked right`, true)}
       ${tile('Last 30 days', pctS(E.last30?.acc), `${(E.last30?.n || 0).toLocaleString()} games`)}
-      ${tile('Both seasons', pctS(E.all?.acc), `${(E.all?.n || 0).toLocaleString()} games graded`)}
+      ${tile(`${(M.seasons || []).length || 2} seasons`, pctS(E.all?.acc), `${(E.all?.n || 0).toLocaleString()} games graded`)}
       ${tile('Confident calls', pctS(E.confident?.acc), `when it gave ${pct0(E.confident?.cut)}+ · ${(E.confident?.n || 0).toLocaleString()} games`)}
       ${tile('Home team every time', pctS(E.all?.homeAcc ?? E.base?.home), edge != null ? `model is ${edge >= 0 ? '+' : ''}${(edge * 100).toFixed(1)} pts better` : 'the simplest baseline')}
       ${tile('Brier score', E.all?.brier != null ? E.all.brier.toFixed(3) : '—', 'lower is better · a coin flip scores 0.250')}
