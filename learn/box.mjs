@@ -16,7 +16,7 @@ const CORE = p => { const [s, l] = p.split('/'); return `https://sports.core.api
 const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : null; };
 const pair = v => { const m = /^\s*(\d+)\s*[-/]\s*(\d+)/.exec(String(v ?? '')); return m ? [+m[1], +m[2]] : [null, null]; };
 const am = v => { const n = num(typeof v === 'object' ? v?.american ?? v?.odds ?? v?.alternateDisplayValue : v); return n == null || Math.abs(n) < 100 ? null : n; };
-const kindOf = path => path.startsWith('soccer/') ? 'soccer' : path.includes('college') ? 'nba' : path.split('/')[1];
+const kindOf = path => path.startsWith('soccer/') ? 'soccer' : path.includes('college-football') ? 'nfl' : path.includes('college') ? 'nba' : path.split('/')[1];
 
 export async function loadBox(sp) {
   const out = {};

@@ -22,7 +22,10 @@ const SPORTS = {
   nhl: { path: 'hockey/nhl', mode: 'day', K: 8, hfa: 35, carry: .3, rest: true, sd: 2.35, lambda: 20, seasons: 3 },
   // college basketball: 360+ teams, so ESPN needs groups=50 to return every Division I game, and ratings
   // carry further between seasons than the pros because programs change less than rosters suggest
-  cbb: { path: 'basketball/mens-college-basketball', groups: 50, mode: 'day', K: 24, hfa: 115, carry: .4, rest: true, sd: 11.5, lambda: 8, seasons: 2 }
+  cbb: { path: 'basketball/mens-college-basketball', groups: 50, mode: 'day', K: 24, hfa: 115, carry: .4, rest: true, sd: 11.5, lambda: 8, seasons: 2 },
+  // college football: groups=80 is FBS, the division the polls and conference standings cover. Scores swing
+  // much wider than the NFL and programs carry further between seasons than rosters would suggest.
+  cfb: { path: 'football/college-football', groups: 80, teamsFrom: 'standings', mode: 'week', K: 22, hfa: 75, carry: .45, rest: false, sd: 16, lambda: 8, seasons: 4 }
 };
 /* Soccer: one model per league, three outcomes (home win, draw, away win) */
 const SOCCER = { draws: true, anyType: true, mode: 'day', K: 20, hfa: 60, carry: .3, rest: false, sd: 1.6, lambda: 20, minGames: 6, seasons: 3 };
@@ -113,10 +116,10 @@ async function collect(sp, S, store, log) {
     const cur = await fetchJSON(`${base}/scoreboard?limit=200${S.groups ? `&groups=${S.groups}` : ''}`);
     const year = cur?.leagues?.[0]?.season?.year || new Date().getUTCFullYear();
     for (const y of Array.from({ length: S.seasons || 2 }, (_, i) => year - (S.seasons || 2) + 1 + i)) {
-      const probe = y === year ? cur : await fetchJSON(`${base}/scoreboard?dates=${y}&seasontype=2&week=1&limit=200`);
+      const probe = y === year ? cur : await fetchJSON(`${base}/scoreboard?dates=${y}&seasontype=2&week=1&limit=200${S.groups ? `&groups=${S.groups}` : ''}`);
       (probe?.leagues?.[0]?.calendar || []).forEach(t => {
         const st = num(t.value); if (st !== 2 && st !== 3) return;
-        (t.entries || []).forEach(e => { if (!e.startDate || dayOf(e.startDate) > today) return; units.push({ key: `${y}-${st}-${e.value}`, url: `${base}/scoreboard?dates=${y}&seasontype=${st}&week=${e.value}&limit=200`, day: dayOf(e.endDate || e.startDate) }); });
+        (t.entries || []).forEach(e => { if (!e.startDate || dayOf(e.startDate) > today) return; units.push({ key: `${y}-${st}-${e.value}`, url: `${base}/scoreboard?dates=${y}&seasontype=${st}&week=${e.value}&limit=200${S.groups ? `&groups=${S.groups}` : ''}`, day: dayOf(e.endDate || e.startDate) }); });
       });
     }
   }
@@ -279,7 +282,7 @@ function evalOf(rows, S) {        // the same report card the Model tab has alwa
 }
 const FRESH = 7 * 864e5;
 function trainUSv2(sp, store, box, S, log, prevM) {
-  const reuse = prevM && prevM.version >= 2 && prevM.params && prevM.tunedAt && Date.now() - new Date(prevM.tunedAt) < FRESH && JSON.stringify(prevM.features) === JSON.stringify(SM.FEATURES[sp]) && prevM.compare?.old;
+  const reuse = prevM && prevM.version >= 2 && prevM.params && prevM.tunedAt && Date.now() - new Date(prevM.tunedAt) < FRESH && JSON.stringify(prevM.features) === JSON.stringify(SM.FEATURES[SM.kindOf(sp)]) && prevM.compare?.old;
   const tune = tuneUS(sp, store.games, box, S, log, reuse ? { P: prevM.params, old: prevM.compare.old, tunedAt: prevM.tunedAt } : null);
   const r = walkUS(sp, store.games, box, S, tune.P);
   const ev = evalRows(r.wf, r.seasons);
@@ -324,7 +327,7 @@ function trainSoccerV2(lg, store, box, S, log, prevM) {
     eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length, _wf: r.wf };
 }
 
-const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500, cbb: 3000 };
+const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500, cbb: 3000, cfb: 2000 };
 /* ------------------------------------------------------------------ main */
 async function run(sp, log) {
   const S = SPORTS[sp];
@@ -346,9 +349,13 @@ async function run(sp, log) {
   await writeJSON(`model-${sp}.json`, model);
   if (S.groups) {                                              // college: publish the team list the page can't fetch itself (ESPN blocks browsers)
     try {
-      const d = await fetchJSON(`${API(S.path)}/teams?limit=500`);
-      const teams = (d?.sports?.[0]?.leagues?.[0]?.teams || []).map(({ team: t }) => ({ id: String(t.id), abbreviation: t.abbreviation || '', displayName: t.displayName || t.shortDisplayName || '', shortDisplayName: t.shortDisplayName || '', color: t.color || '', logo: t.logos?.[0]?.href || '' })).filter(t => t.id && t.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
-      if (teams.length > 100) { await writeJSON(`teams-${sp}.json`, { updated: new Date().toISOString(), teams }); log(`${sp}: ${teams.length} teams published`); }
+      const fromStand = S.teamsFrom === 'standings';
+      const d = await fetchJSON(fromStand ? `https://site.api.espn.com/apis/v2/sports/${S.path}/standings?level=3` : `${API(S.path)}/teams?limit=500`);
+      const raw = fromStand
+        ? (d?.children || []).flatMap(c => (c.standings?.entries || []).map(e => ({ team: { ...e.team, conference: c.name } })))
+        : (d?.sports?.[0]?.leagues?.[0]?.teams || []);
+      const teams = raw.map(({ team: t }) => ({ id: String(t.id), abbreviation: t.abbreviation || '', displayName: t.displayName || t.shortDisplayName || '', shortDisplayName: t.shortDisplayName || '', color: t.color || '', logo: t.logos?.[0]?.href || '', conference: t.conference || '' })).filter(t => t.id && t.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
+      if (teams.length > 60) { await writeJSON(`teams-${sp}.json`, { updated: new Date().toISOString(), teams }); log(`${sp}: ${teams.length} teams published`); }
     } catch (e) { log(`${sp}: team list skipped — ${e.message}`); }
   }
   try {                                                        // spreads, totals and player impact for the Analytics tab

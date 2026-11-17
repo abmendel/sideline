@@ -11,7 +11,7 @@ const day = iso => Math.floor(new Date(iso).getTime() / 864e5);
 
 /* ---------- teams and current rosters (names, logos, who plays where) ---------- */
 async function teamsOf(path, fetchJSON) {
-  const d = await fetchJSON(`${SITE(path)}/teams?limit=500`).catch(() => null), out = {};
+  const d = await fetchJSON(`${SITE(path)}/teams?limit=900`).catch(() => null), out = {};
   (d?.sports?.[0]?.leagues?.[0]?.teams || []).forEach(({ team: t }) => { out[String(t.id)] = { abbr: t.abbreviation || '', name: t.shortDisplayName || t.displayName || '', logo: t.logos?.[0]?.href || '' }; });
   return out;
 }

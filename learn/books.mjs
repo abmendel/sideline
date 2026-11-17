@@ -8,7 +8,7 @@ const DATA = new URL('../data/', import.meta.url);
 const KEY = process.env.RUNDOWN_KEY || '';
 const BOOKS = { 19: 'dk', 23: 'fd', 22: 'mgm' };
 export const BOOK_NAMES = { dk: 'DraftKings', fd: 'FanDuel', mgm: 'BetMGM' };
-const SPORT_ID = { nba: 4, nfl: 2, mlb: 3, nhl: 6, cbb: 5, 'eng.1': 11, 'esp.1': 14, 'ger.1': 13, 'ita.1': 15, 'fra.1': 12, 'usa.1': 10, 'mex.1': 34, 'uefa.champions': 16 };
+const SPORT_ID = { nba: 4, nfl: 2, mlb: 3, nhl: 6, cbb: 5, cfb: 1, 'eng.1': 11, 'esp.1': 14, 'ger.1': 13, 'ita.1': 15, 'fra.1': 12, 'usa.1': 10, 'mex.1': 34, 'uefa.champions': 16 };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
 const read = async (n, d) => { try { return JSON.parse(await fs.readFile(new URL(n, DATA), 'utf8')); } catch { return d; } };

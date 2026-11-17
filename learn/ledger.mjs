@@ -267,7 +267,7 @@ async function runSoccer(log) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const want = process.argv.slice(2);
-  const list = want.length ? want : ['nba', 'nfl', 'mlb', 'nhl', 'cbb', 'soccer'];
+  const list = want.length ? want : ['nba', 'nfl', 'mlb', 'nhl', 'cbb', 'cfb', 'soccer'];
   for (const sp of list) {
     try { if (sp === 'soccer') await runSoccer(console.log); else await runSport(sp, console.log); }
     catch (e) { console.error(`${sp}: failed — ${e.stack || e.message}`); process.exitCode = 1; }
