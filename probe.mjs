@@ -1,52 +1,23 @@
 const B = 'https://site.api.espn.com/apis/site/v2/sports/football/college-football';
 const get = async u => { const r = await fetch(u); return r.ok ? await r.json() : { __err: r.status }; };
-const show = (k, v) => console.log(k + ':', v);
-
-// how many games come back with and without the FBS group filter
-for (const q of ['', '&groups=80', '&groups=81', '&limit=200&groups=80']) {
-  const d = await get(`${B}/scoreboard?dates=20261114${q}&limit=200`);
-  show(`sb[${q}]`, (d.events || []).length + ' events, err=' + (d.__err || ''));
+for (const q of ['?limit=900', '?limit=900&groups=80', '?limit=900&group=80']) {
+  const d = await get(`${B}/teams${q}`);
+  const l = (d.sports?.[0]?.leagues?.[0]?.teams || []).map(x => x.team);
+  console.log('teams' + q, '→', l.length, l.slice(0, 3).map(t => t.displayName).join(' / '));
 }
-const d = await get(`${B}/scoreboard?dates=20261114&groups=80&limit=200`);
-const ev = (d.events || [])[0] || {};
-show('event keys', Object.keys(ev).join(','));
-const c = ev.competitions?.[0] || {};
-show('comp keys', Object.keys(c).join(','));
-show('competitor keys', Object.keys(c.competitors?.[0] || {}).join(','));
-show('curatedRank', JSON.stringify(c.competitors?.map(x => x.curatedRank)));
-show('team keys', Object.keys(c.competitors?.[0]?.team || {}).join(','));
-show('odds', JSON.stringify(c.odds || []).slice(0, 700));
-show('weeks', JSON.stringify({ week: d.week, season: d.season, leagueCal: (d.leagues?.[0]?.calendar || []).length }).slice(0, 400));
-show('groups meta', JSON.stringify(d.leagues?.[0]?.groups || null).slice(0, 200));
-
-// teams
-const t = await get(`${B}/teams?limit=900`);
-const list = (t.sports?.[0]?.leagues?.[0]?.teams || []).map(x => x.team);
-show('teams', list.length + ' first=' + JSON.stringify(list[0]).slice(0, 220));
-
-// standings by conference
+// the FBS set from standings, with the fields the page needs
 const s = await get('https://site.api.espn.com/apis/v2/sports/football/college-football/standings?level=3');
-show('standings children', (s.children || []).length);
-show('conf sizes', (s.children || []).map(x => (x.standings?.entries || []).length).join(','));
-show('sample confs', (s.children || []).slice(0, 8).map(x => `${x.id}:${x.name}`).join(' | '));
-show('stat names', ((s.children || [])[0]?.standings?.entries?.[0]?.stats || []).map(x => x.name).join(','));
-
-// rankings
-const r = await get(`${B}/rankings`);
-const polls = (r.rankings || []).filter(p => (p.ranks || []).length);
-show('polls', polls.map(p => `${p.shortName}/${p.type}/${p.ranks.length}`).join(' '));
-show('week', polls[0]?.occurrence?.displayValue);
-show('top5', polls[0]?.ranks?.slice(0, 5).map(x => `${x.current} ${x.team.location} (${x.recordSummary}) prev ${x.previous} pts ${x.points} fpv ${x.firstPlaceVotes}`).join(' | '));
-const byTeam = {}; (s.children || []).forEach(x => (x.standings?.entries || []).forEach(e => byTeam[String(e.team?.id)] = x.name));
-show('ranked in a conference', (polls[0]?.ranks || []).filter(x => byTeam[String(x.team.id)]).length + '/' + (polls[0]?.ranks || []).length);
-
-// box score shape for the model
-const sum = await get(`${B}/summary?event=${ev.id}`);
-show('summary keys', Object.keys(sum).join(','));
-const bx = sum.boxscore || {};
-show('boxscore teams stats', (bx.teams?.[0]?.statistics || []).map(x => x.name).slice(0, 40).join(','));
-show('player cats', (bx.players?.[0]?.statistics || []).map(x => x.name).join(','));
-show('providers', JSON.stringify((sum.pickcenter || []).map(p => p.provider?.name)));
-show('winprob', (sum.winprobability || []).length);
-show('drives', Object.keys(sum.drives || {}).join(','));
-show('leaders', JSON.stringify((sum.leaders || []).map(x => x.team?.id)).slice(0, 120));
+const rows = [];
+(s.children || []).forEach(c => (c.standings?.entries || []).forEach(e => rows.push({ id: e.team?.id, name: e.team?.displayName, abbr: e.team?.abbreviation, logo: e.team?.logos?.[0]?.href, conf: c.name })));
+console.log('standings teams:', rows.length, '| sample:', JSON.stringify(rows[0]));
+console.log('missing logo:', rows.filter(r => !r.logo).length, '| missing abbr:', rows.filter(r => !r.abbr).length);
+// how many games a week, and what a week URL with groups returns
+for (const w of [1, 8, 12]) {
+  const d = await get(`${B}/scoreboard?dates=2026&seasontype=2&week=${w}&groups=80&limit=200`);
+  console.log(`week ${w}:`, (d.events || []).length, 'events');
+}
+const d = await get(`${B}/scoreboard?dates=2026&seasontype=2&week=12&groups=80&limit=200`);
+const ev = (d.events || []).find(e => (e.competitions?.[0]?.odds || []).length);
+console.log('events with odds:', (d.events || []).filter(e => (e.competitions?.[0]?.odds || []).length).length);
+console.log('odds sample:', JSON.stringify(ev?.competitions?.[0]?.odds?.[0] || null).slice(0, 400));
+console.log('provider names:', JSON.stringify([...new Set((d.events||[]).flatMap(e => (e.competitions?.[0]?.odds||[]).map(o => o.provider?.name)))]));
