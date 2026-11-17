@@ -5,6 +5,11 @@ on:
     - cron: '30 14 * * *'   # morning: last night's results + today's opening odds
     - cron: '30 22 * * *'   # late afternoon: odds closer to game time
   workflow_dispatch:
+    inputs:
+      sports:
+        description: 'Sports to train (space separated, blank = all)'
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -29,7 +34,7 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          node learn/learn.mjs 2>&1 | tee train.log
+          node learn/learn.mjs ${{ inputs.sports }} 2>&1 | tee train.log
 
       - name: Commit updated models
         if: always()

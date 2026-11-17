@@ -22,7 +22,7 @@ const SPORTS = {
   nhl: { path: 'hockey/nhl', mode: 'day', K: 8, hfa: 35, carry: .3, rest: true, sd: 2.35, lambda: 20, seasons: 3 },
   // college basketball: 360+ teams, so ESPN needs groups=50 to return every Division I game, and ratings
   // carry further between seasons than the pros because programs change less than rosters suggest
-  cbb: { path: 'basketball/mens-college-basketball', groups: 50, mode: 'day', K: 24, hfa: 115, carry: .4, rest: true, sd: 11.5, lambda: 8, seasons: 3 }
+  cbb: { path: 'basketball/mens-college-basketball', groups: 50, mode: 'day', K: 24, hfa: 115, carry: .4, rest: true, sd: 11.5, lambda: 8, seasons: 2 }
 };
 /* Soccer: one model per league, three outcomes (home win, draw, away win) */
 const SOCCER = { draws: true, anyType: true, mode: 'day', K: 20, hfa: 60, carry: .3, rest: false, sd: 1.6, lambda: 20, minGames: 6, seasons: 3 };
@@ -324,7 +324,7 @@ function trainSoccerV2(lg, store, box, S, log, prevM) {
     eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length, _wf: r.wf };
 }
 
-const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500, cbb: 5000 };
+const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500, cbb: 3000 };
 /* ------------------------------------------------------------------ main */
 async function run(sp, log) {
   const S = SPORTS[sp];
