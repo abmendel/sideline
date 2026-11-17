@@ -865,3 +865,14 @@ textarea.dataarea{width:100%;min-height:90px;border-radius:10px;background:rgba(
 
 /* AP ranking badge (college basketball) */
 .ap{display:inline-block;font-size:11px;font-weight:700;color:var(--dim);margin-right:5px;vertical-align:1px}
+
+/* Several favorite teams: one column of team panels, and a picker you can keep tapping */
+.mycol{display:grid;gap:16px;align-items:start;min-width:0}
+#pBody #tSearch{position:sticky;top:-2px;z-index:2;background:var(--surface);box-shadow:0 6px 10px -8px rgba(0,0,0,.4)}
+.chosen{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip-team{display:inline-flex;align-items:center;gap:6px;padding:5px 9px 5px 6px;border-radius:999px;background:rgba(var(--acc-rgb),.14);color:var(--text);font-size:13px;font-weight:500;max-width:100%}
+.chip-team img,.chip-team .logo-ph{width:19px;height:19px;flex:none}
+.chip-team span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip-team i{font-style:normal;color:var(--muted);font-size:11px}
+.chip-team:hover{background:rgba(var(--acc-rgb),.24)}.chip-team:hover i{color:var(--text)}
+.mfoot{display:flex;align-items:center;gap:10px;margin-top:14px;position:sticky;bottom:-22px;padding:12px 0;background:linear-gradient(to top,var(--bg) 60%,transparent)}

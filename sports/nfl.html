@@ -326,9 +326,12 @@ function applyLayout() {
    Favorites, picks, compare (saved)
    ===================================================================== */
 const FKEY = 'gridiron.favorites.v1', PKEY = 'gridiron.picks.v1', CKEY = 'gridiron.compare.v1', AKEY = 'gridiron.alerts.v1';
-const FAV = { teamId: null, players: [], ...store.get(FKEY, {}) };
+const FAV = { teams: [], players: [], ...store.get(FKEY, {}) };
 if (!Array.isArray(FAV.players)) FAV.players = [];
-if (FAV.teamId != null) FAV.teamId = String(FAV.teamId);
+if (!Array.isArray(FAV.teams)) FAV.teams = [];
+if (FAV.teamId != null && !FAV.teams.length) FAV.teams = [String(FAV.teamId)];   // one favorite team became a list of them
+delete FAV.teamId;
+FAV.teams = FAV.teams.map(String);
 const PICKS = store.get(PKEY, {});
 const CMP = store.get(CKEY, [null, null]);
 const saveFav = () => { store.set(FKEY, FAV); updateCounts(); updateHello(); };
@@ -801,15 +804,27 @@ async function renderInsights() {
     ${modelCard()}<div class="sublabel" style="margin:4px 0 10px">Advanced player leaders</div><div class="ins-boards">${boards}</div>`;
   $$('#seasonBody [data-ik]').forEach(th => th.onclick = () => { if (INSD.sort === th.dataset.ik || (!INSD.sort && th.dataset.ik === cols[0].k)) INSD.dir *= -1; else { INSD.sort = th.dataset.ik; INSD.dir = -1; } renderInsights(); });
 }
-const isFavTeam = id => id != null && FAV.teamId != null && String(id) === FAV.teamId;
+const isFavTeam = id => id != null && FAV.teams.includes(String(id));
 const isFavPlayer = id => FAV.players.some(p => String(p.id) === String(id));
 function toggleFavPlayer(pl) {
   if (isFavPlayer(pl.id)) { FAV.players = FAV.players.filter(p => String(p.id) !== String(pl.id)); toast(`Stopped tracking ${pl.name}`); }
   else { FAV.players.push({ ...pl, id: String(pl.id) }); toast(`★ Tracking ${pl.name}`); }
   saveFav();
 }
+function toggleFavTeam(id, quiet) {
+  const key = String(id), t = teamById(key);
+  if (isFavTeam(key)) { FAV.teams = FAV.teams.filter(x => x !== key); if (!quiet) toast(`Stopped following ${t?.displayName || 'that team'}`); }
+  else { FAV.teams.push(key); if (!quiet) toast(`★ Following ${t?.displayName || 'team'}`); }
+  saveFav(); state.mine = null;
+}
+function pruneFavs() {                             // keep only teams and players that play in this league
+  if (!TEAMS_LIVE || !TEAMS || TEAMS.length < 20) return;
+  const ids = new Set(TEAMS.map(t => String(t.id)));
+  const teams = FAV.teams.filter(id => ids.has(id)), players = FAV.players.filter(pl => pl.teamId == null || ids.has(String(pl.teamId)));
+  if (teams.length !== FAV.teams.length || players.length !== FAV.players.length) { FAV.teams = teams; FAV.players = players; saveFav(); state.mine = null; if (state.tab === 'mine') loadMine(true); }
+}
 function updateCounts() {
-  const n = (FAV.teamId ? 1 : 0) + FAV.players.length;
+  const n = FAV.teams.length + FAV.players.length;
   $('#ct-fav').textContent = n || '';
   const open = Object.values(PICKS).filter(p => !p.result).length;
   $('#ct-picks').textContent = open || '';
@@ -1803,7 +1818,7 @@ async function loadTeams() {
   try {
     const d = await cached(`${API}/teams`, 864e5);
     const list = (d.sports?.[0]?.leagues?.[0]?.teams || []).map(t => t.team).filter(t => t && t.id);
-    if (list.length >= 20) { TEAMS = list.map(t => ({ ...t, id: String(t.id) })).sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '')); TEAMS_LIVE = true; return TEAMS; }
+    if (list.length >= 20) { TEAMS = list.map(t => ({ ...t, id: String(t.id) })).sort((a, b) => (a.displayName || '').localeCompare(b.displayName || '')); TEAMS_LIVE = true; pruneFavs(); return TEAMS; }
   } catch (e) { /* fall back below */ }
   TEAMS = TEAMS || TEAMS_STATIC;
   return TEAMS;
@@ -1853,14 +1868,14 @@ const stat = (m, ...keys) => { for (const k of keys) if (m && m[k] != null && m[
 async function loadMine(silent) {
   updateCounts();
   renderMine();                                   // show the page right away, fill in data as it arrives
-  if (!FAV.teamId && !FAV.players.length) return;
+  if (!FAV.teams.length && !FAV.players.length) return;
   try {
     loadTeams();
     const board = await safe(cached(CUR, 14000));
     const todays = board?.events || state.todayEvents || [];
     if (board) { absorbCalendar(board, 'cur'); state.todayEvents = todays; todays.forEach(gradeEvent); }
-    const [sched, players] = await Promise.all([
-      FAV.teamId ? safe(cached(`${API}/teams/${FAV.teamId}/schedule`, 55000)) : null,
+    const [schedList, players] = await Promise.all([
+      Promise.all(FAV.teams.map(tid => safe(cached(`${API}/teams/${tid}/schedule`, 55000)))),
       Promise.all(FAV.players.map(playerData))
     ]);
     const teamIds = new Set(FAV.players.map(p => String(p.teamId)));
@@ -1870,7 +1885,8 @@ async function loadMine(silent) {
     sums.forEach((sm, gi) => Object.entries(boxLines(sm)).forEach(([id, L]) => { if (isFavPlayer(id)) lines[id] = { s: L.m, ev: games[gi] }; }));
     const upcoming = {};
     todays.filter(ev => statusOf(ev).state === 'pre').forEach(ev => { const { home, away } = compOf(ev); [home, away].forEach(t => upcoming[String(t.team?.id)] = ev); });
-    state.mine = { sched, players, lines, upcoming, todays, at: Date.now() };
+    const scheds = {}; FAV.teams.forEach((tid, i) => scheds[tid] = schedList[i]);
+    state.mine = { scheds, players, lines, upcoming, todays, at: Date.now() };
     state.error = null; state.lastOk = Date.now();
     if (state.tab === 'mine') renderMine();
   } catch (e) { fail(e); }
@@ -1880,22 +1896,24 @@ function renderMine() {
   try { box.innerHTML = mineHtml(state.mine); }
   catch (e) {
     console.error(e);
-    box.innerHTML = `${storageBanner()}<div class="panel glass cta" style="grid-column:1/-1"><h3>Something went wrong showing this page</h3><p>${esc(e.message)}</p><div style="display:flex;gap:8px"><button class="pillbtn accbtn" data-act="team">Change team</button><button class="pillbtn glass" data-act="players">Edit players</button></div></div>`;
+    box.innerHTML = `${storageBanner()}<div class="panel glass cta" style="grid-column:1/-1"><h3>Something went wrong showing this page</h3><p>${esc(e.message)}</p><div style="display:flex;gap:8px"><button class="pillbtn accbtn" data-act="team">Edit teams</button><button class="pillbtn glass" data-act="players">Edit players</button></div></div>`;
   }
   $$('#mine [data-act]').forEach(b => b.onclick = () => b.dataset.act === 'compare' ? setTab('compare') : openPicker(b.dataset.act));
   $$('#mine [data-rm]').forEach(b => b.onclick = () => { const p = FAV.players.find(x => String(x.id) === b.dataset.rm); if (p) toggleFavPlayer(p); renderMine(); });
+  $$('#mine [data-rt]').forEach(b => b.onclick = () => { toggleFavTeam(b.dataset.rt); loadMine(true); });
   $$('#mine .srow2[data-id]').forEach(b => b.onclick = () => openGame(b.dataset.id));
 }
 function mineHtml(m) {
-  if (!FAV.teamId && !FAV.players.length) {
+  if (!FAV.teams.length && !FAV.players.length) {
     return `${storageBanner()}<div class="panel glass cta" style="grid-column:1/-1"><span class="bigstar">★</span>
-      <h3>Track your team and players</h3><p style="max-width:440px;margin:0">Pick a favorite team and any players you want to follow. Their games get pinned to the top of Scores, you get alerts for them, and this page shows records, schedules, season stats, fantasy points and live stat lines.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="pillbtn accbtn" data-act="team">Choose team</button><button class="pillbtn glass" data-act="players">Add players</button></div></div>`;
+      <h3>Track your teams and players</h3><p style="max-width:440px;margin:0">Pick the teams and players you want to follow. Their games get pinned to the top of Scores, you get alerts for them, and this page shows records, schedules, season stats, fantasy points and live stat lines.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button class="pillbtn accbtn" data-act="team">Choose teams</button><button class="pillbtn glass" data-act="players">Add players</button></div></div>`;
   }
-  let teamHtml;
-  if (!FAV.teamId) teamHtml = `<div class="panel glass cta"><h3>No favorite team yet</h3><button class="pillbtn accbtn" data-act="team">Choose team</button></div>`;
-  else {
-    const tid = FAV.teamId, sched = m?.sched, base = teamById(tid) || {};
+  const teamHtml = `<div class="mycol">${FAV.teams.length
+    ? `<div class="ph" style="margin:0 2px -4px"><h3>My teams</h3><span class="sub">${FAV.teams.length} followed</span><span class="spacer"></span><button class="pillbtn accbtn sm" data-act="team">+ Add teams</button></div>${FAV.teams.map(tid => teamPanel(tid, m)).join('')}`
+    : `<div class="panel glass cta"><h3>No teams yet</h3><p style="margin:0;max-width:340px">Follow as many as you like — their games get pinned to the top of Scores.</p><button class="pillbtn accbtn" data-act="team">Choose teams</button></div>`}</div>`;
+  function teamPanel(tid, m) {
+    const sched = m?.scheds?.[tid], base = teamById(tid) || {};
     const t = { ...base, ...(sched?.team || {}) };
     const evs = (sched?.events || []).map(ev => {
       const c = ev.competitions?.[0] || {}, comps = c.competitors || [];
@@ -1909,14 +1927,15 @@ function mineHtml(m) {
     const lastN = done.slice(0, 10).reverse(), wins = done.filter(e => e.win).length, ties = done.filter(e => e.tie).length;
     const avg = k => done.length ? (done.reduce((s, e) => s + (e[k] || 0), 0) / done.length).toFixed(1) : '—';
     const rec = t.recordSummary || t.record?.items?.[0]?.summary || (done.length ? `${wins}-${done.length - wins - ties}${ties ? '-' + ties : ''}` : '—');
-    const todayEv = (m?.todays || state.todayEvents || []).find(isMyGame);
+    const inGame = ev => { const c = compOf(ev); return String(c.home.team?.id) === tid || String(c.away.team?.id) === tid; };   // this panel's team, not just any favorite
+    const todayEv = (m?.todays || state.todayEvents || []).find(inGame);
     const res = e => e.tie ? `<b style="color:var(--muted)">T</b>` : `<b style="color:${e.win ? 'var(--acc-text)' : 'var(--bad)'}">${e.win ? 'W' : 'L'}</b>`;
     const srow = e => `<button class="srow2" data-id="${esc(e.id)}"><span class="d">${esc(e.date.toLocaleDateString([], { month: 'short', day: 'numeric' }))}</span>${logoImg(e.op.team)}
       <span>${e.home ? 'vs' : '@'} ${esc(e.op.team?.shortDisplayName || e.op.team?.displayName || e.op.team?.abbreviation || '')}</span>
       <span class="r">${e.state === 'post' ? `${res(e)} ${esc(e.my)}–${esc(e.their)}` : e.state === 'in' ? `<span class="chip live" style="padding:2px 8px"><i></i>${esc(e.detail)}</span>` : esc(e.date.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }))}${PICKS[e.id] ? `<span class="chip ${PICKS[e.id].result === 'W' ? 'win' : PICKS[e.id].result === 'L' ? 'loss' : 'pre'}" style="padding:2px 7px">pick ${esc(PICKS[e.id].pickAbbr)}</span>` : ''}</span></button>`;
     let todayHtml = '';
     if (todayEv) {
-      const { home, away } = compOf(todayEv), meHome = isFavTeam(home.team?.id), me = meHome ? home : away, op = meHome ? away : home;
+      const { home, away } = compOf(todayEv), meHome = String(home.team?.id) === tid, me = meHome ? home : away, op = meHome ? away : home;
       const st = statusOf(todayEv), my = num(me.score), th = num(op.score), tie = st.state === 'post' && my === th;
       todayHtml = `<div class="sublabel">This week</div><div class="sched">${srow({ id: todayEv.id, date: new Date(todayEv.date), me, op, home: meHome, state: st.state, detail: st.detail, my, their: th, tie, win: !tie && my > th })}</div>
         ${oddsStrip(oddsForEvent(todayEv), home.team?.abbreviation, away.team?.abbreviation).replace('class="oddsstrip"', 'class="oddsstrip" style="padding:8px 0 0"')}`;
@@ -1925,9 +1944,9 @@ function mineHtml(m) {
     const chart = !sched ? '<div class="muted">Loading schedule…</div>' : recent.length ? `<div class="spark" style="height:90px;gap:4px">${recent.map(e => `<div title="${esc(e.op.team?.abbreviation)} ${esc(e.my)}–${esc(e.their)}"><em>${esc(e.my)}</em><span style="display:flex;gap:2px;align-items:flex-end;height:100%;width:100%;justify-content:center">
         <i class="${e.win ? '' : 'l'}" style="height:${((e.my || 0) / mx * 100).toFixed(0)}%;max-width:11px"></i><i class="o" style="height:${((e.their || 0) / mx * 100).toFixed(0)}%;max-width:11px"></i></span><small>${esc(e.op.team?.abbreviation || '')}</small></div>`).join('')}</div>` : '<div class="muted">No completed games yet this season.</div>';
     const rm = String(rec).match(/^(\d+)-(\d+)(?:-(\d+))?/), w2 = rm ? +rm[1] : wins, l2 = rm ? +rm[2] : done.length - wins - ties, t2 = rm ? +(rm[3] || 0) : ties, gp2 = w2 + l2 + t2;
-    teamHtml = `<div class="panel glass">
+    return `<div class="panel glass">
       <div class="teamhead">${logoImg(base.logo || base.logos ? base : t)}<div style="min-width:0"><h2>${esc(t.displayName || base.displayName || 'My team')}</h2><div class="s">${esc(rec)}${t.standingSummary ? ' · ' + esc(t.standingSummary) : ''}</div></div>
-        <span class="spacer"></span><button class="pillbtn glass sm" data-act="team">Change</button></div>
+        <span class="spacer"></span><button class="xbtn" data-rt="${esc(tid)}" title="Stop following">✕</button></div>
       <div class="minitiles"><div class="tile ringtile">${ring(gp2 ? (w2 + t2 / 2) / gp2 : 0, { size: 58, stroke: 6, value: gp2 ? Math.round((w2 + t2 / 2) / gp2 * 100) + '%' : '—' })}<div><div class="k">Record</div><b>${esc(rec)}</b></div></div><div class="tile"><div class="k">Pts for</div><div class="v">${avg('my')}</div></div><div class="tile"><div class="k">Pts against</div><div class="v">${avg('their')}</div></div></div>
       ${todayHtml}
       <div class="sublabel">Last ${lastN.length || 10} games</div><div class="wl">${lastN.length ? lastN.map(e => `<span class="${e.tie ? 't' : e.win ? 'w' : 'l'}" title="${esc(e.op.team?.abbreviation)} ${esc(e.my)}–${esc(e.their)}">${e.tie ? 'T' : e.win ? 'W' : 'L'}</span>`).join('') : `<span class="muted" style="width:auto">${sched ? '—' : 'Loading…'}</span>`}</div>
@@ -2211,12 +2230,12 @@ function paintSeasonTable() {
     if (!SS.teams) { body.innerHTML = '<div class="skeleton" style="height:520px"></div>'; return; }
     const col = TCOLS.find(c => c.k === SS.tSort) || TCOLS[1];
     const rows = [...SS.teams].sort((a, b) => SS.tDir * ((tv(a.m, col) ?? -1e9) - (tv(b.m, col) ?? -1e9)));
-    body.innerHTML = `${panelHead('Team season stats', `${SS.per === 'pg' ? 'per game' : 'season totals'} · click a column to sort · ★ sets your team`, IC.st)}
+    body.innerHTML = `${panelHead('Team season stats', `${SS.per === 'pg' ? 'per game' : 'season totals'} · click a column to sort · ★ follows a team`, IC.st)}
       <div class="tbl-wrap"><table class="stbl teams"><thead><tr><th>#</th><th style="text-align:left">Team</th>${TCOLS.map(c => `<th class="sortable ${c.k === SS.tSort ? 'sorted' : ''}" data-tk="${c.k}">${c.k}${c.k === SS.tSort ? (SS.tDir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead>
       <tbody>${rows.map((r, i) => `<tr class="${isFavTeam(r.t.id) ? 'mine' : ''}"><td class="rk">${i + 1}</td><td class="pl"><div class="pcell"><button class="favstar ${isFavTeam(r.t.id) ? 'on' : ''}" data-ft="${esc(r.t.id)}" title="Make this my team">★</button>${logoImg(teamById(r.t.id) || r.t)}<div><b>${esc(r.t.displayName || r.t.name || '')}</b><span>${esc(r.t.abbreviation || '')}</span></div></div></td>
         ${TCOLS.map(c => { const v = tv(r.m, c); const cls = c.k === SS.tSort ? 'sorted' : c.diff ? (v > 0 ? 'pos' : v < 0 ? 'neg' : '') : ''; return `<td class="${cls}">${fmtStat(v, c)}</td>`; }).join('')}</tr>`).join('')}</tbody></table></div>`;
     $$('#seasonBody [data-tk]').forEach(th => th.onclick = () => { const c = TCOLS.find(x => x.k === th.dataset.tk); if (SS.tSort === c.k) SS.tDir *= -1; else { SS.tSort = c.k; SS.tDir = c.asc ? 1 : -1; } paintSeasonTable(); });
-    $$('#seasonBody [data-ft]').forEach(b => b.onclick = () => { FAV.teamId = isFavTeam(b.dataset.ft) ? null : String(b.dataset.ft); saveFav(); state.mine = null; toast(FAV.teamId ? `★ ${teamById(FAV.teamId)?.displayName || 'Team'} is your team` : 'Favorite team cleared'); paintSeasonTable(); });
+    $$('#seasonBody [data-ft]').forEach(b => b.onclick = () => { toggleFavTeam(b.dataset.ft); paintSeasonTable(); });
     return;
   }
   if (!SS.rows.length) { body.innerHTML = SS.loading || !SS.count ? '<div class="skeleton" style="height:520px"></div>' : '<div class="empty">No players found.</div>'; return; }
@@ -2410,7 +2429,7 @@ async function renderMatchup() {
   if (!MU.away || !MU.home) {
     const first = today.find(e => statusOf(e).state !== 'post') || today[0];
     if (first) { const { home, away } = compOf(first); MU.away = String(away.team?.id); MU.home = String(home.team?.id); MU.ev = first; MU.neutral = !!first.competitions?.[0]?.neutralSite; }
-    else { MU.away = FAV.teamId || TEAMS[0].id; MU.home = TEAMS.find(t => t.id !== MU.away).id; }
+    else { MU.away = FAV.teams[0] || TEAMS[0].id; MU.home = TEAMS.find(t => t.id !== MU.away).id; }
   }
   const pool_ = [...today, ...(MU.ev ? [MU.ev] : [])];
   MU.ev = pool_.find(e => { const { home, away } = compOf(e); return String(home.team?.id) === MU.home && String(away.team?.id) === MU.away; }) || null;
@@ -2475,17 +2494,31 @@ function closeModal() {
   if (state.tab === 'mine') loadMine(true); else if (state.tab === 'compare') renderCompare(); else if (state.tab === 'scores') renderScores();
 }
 async function openPicker(mode, slotIdx) {
-  openModal(mode === 'team' ? 'Choose your team' : mode === 'compare' ? `Choose player ${slotIdx + 1}` : 'Track players');
+  openModal(mode === 'team' ? 'Choose your teams' : mode === 'compare' ? `Choose player ${slotIdx + 1}` : 'Track players');
   $('#pBody').innerHTML = '<div class="skeleton" style="height:300px"></div>';
   await loadTeams();                               // never throws: falls back to the built-in list
   if (mode === 'team') {
-    $('#pBody').innerHTML = `<div class="tgrid">${TEAMS.map(t => `<button class="tbtn ${isFavTeam(t.id) ? 'on' : ''}" data-tid="${esc(t.id)}">${logoImg(t)}<span>${esc(t.displayName)}</span></button>`).join('')}</div>
-      ${FAV.teamId ? '<div style="margin-top:12px;text-align:right"><button class="pillbtn glass sm" id="clearTeam">Clear favorite team</button></div>' : ''}`;
-    $$('#pBody [data-tid]').forEach(b => b.onclick = () => { FAV.teamId = String(b.dataset.tid); saveFav(); state.mine = null; toast(`★ ${teamById(FAV.teamId)?.displayName || 'Team'} is your team`); closeModal(); });
-    const ct = $('#clearTeam'); if (ct) ct.onclick = () => { FAV.teamId = null; saveFav(); state.mine = null; toast('Favorite team cleared'); closeModal(); };
+    let q = '';
+    const drawTeams = () => {
+      const needle = q.trim().toLowerCase();
+      const list = needle ? TEAMS.filter(t => `${t.displayName} ${t.shortDisplayName || ''} ${t.abbreviation || ''}`.toLowerCase().includes(needle)) : TEAMS;
+      const chosen = FAV.teams.map(id => teamById(id)).filter(Boolean);
+      $('#pBody').innerHTML = `<input class="minput" id="tSearch" autocomplete="off" placeholder="Search NFL teams…" value="${esc(q)}">
+        <p class="note" style="margin:0 0 10px">Tap to follow or unfollow — add as many teams as you like.</p>
+        ${chosen.length ? `<div class="chosen">${chosen.map(t => `<button class="chip-team" data-tid="${esc(t.id)}" title="Stop following">${logoImg(t)}<span>${esc(t.shortDisplayName || t.displayName)}</span><i>✕</i></button>`).join('')}</div>` : ''}
+        <div class="tgrid">${list.map(t => `<button class="tbtn ${isFavTeam(t.id) ? 'on' : ''}" data-tid="${esc(t.id)}">${logoImg(t)}<span>${esc(t.displayName)}</span></button>`).join('') || '<div class="muted">No team by that name.</div>'}</div>
+        <div class="mfoot">${FAV.teams.length ? '<button class="pillbtn glass sm" id="clearTeam">Clear all</button>' : ''}<span class="spacer"></span><button class="pillbtn accbtn sm" id="doneTeam">Done</button></div>`;
+      $$('#pBody [data-tid]').forEach(b => b.onclick = () => { toggleFavTeam(b.dataset.tid); drawTeams(); });
+      const ct = $('#clearTeam'); if (ct) ct.onclick = () => { FAV.teams = []; saveFav(); state.mine = null; toast('Teams cleared'); drawTeams(); };
+      $('#doneTeam').onclick = () => closeModal();
+      const inp = $('#tSearch');
+      inp.oninput = () => { q = inp.value; const at = inp.selectionStart; drawTeams(); const n = $('#tSearch'); n.focus(); try { n.setSelectionRange(at, at); } catch (e) {} };
+      if (q) inp.focus();
+    };
+    drawTeams();
     return;
   }
-  let cur = FAV.teamId || 'all';
+  let cur = FAV.teams[0] || 'all';
   const draw = () => {
     $('#pBody').innerHTML = `<div class="tstrip"><button class="${cur === 'all' ? 'on' : ''}" data-tid="all">All teams</button>${TEAMS.map(t => `<button class="${String(t.id) === String(cur) ? 'on' : ''}" data-tid="${esc(t.id)}">${esc(t.abbreviation)}</button>`).join('')}</div>
       <input class="minput" id="pSearch" autocomplete="off" placeholder="${cur === 'all' ? 'Search any NFL player by name…' : `Filter ${esc(teamById(cur)?.displayName || '')} roster…`}"><div class="plist" id="pList"></div>`;
@@ -2597,7 +2630,7 @@ function openSettings() {
     $('#importData').onclick = () => {
       try {
         const d = JSON.parse($('#dataIn').value);
-        if (d.favorites) { FAV.teamId = d.favorites.teamId != null ? String(d.favorites.teamId) : null; FAV.players = Array.isArray(d.favorites.players) ? d.favorites.players : []; saveFav(); }
+        if (d.favorites) { FAV.teams = (Array.isArray(d.favorites.teams) ? d.favorites.teams : d.favorites.teamId != null ? [d.favorites.teamId] : []).map(String); FAV.players = Array.isArray(d.favorites.players) ? d.favorites.players : []; saveFav(); }
         if (d.picks && typeof d.picks === 'object') { Object.keys(PICKS).forEach(k => delete PICKS[k]); Object.assign(PICKS, d.picks); savePicks(); }
         if (d.settings) { Object.assign(SET, d.settings, { alerts: { ...DEF.alerts, ...(d.settings.alerts || {}) }, fantasy: { ...DEF.fantasy, ...(d.settings.fantasy || {}) } }); saveSet(); applySettings(); }
         if (Array.isArray(d.compare)) { CMP[0] = d.compare[0] || null; CMP[1] = d.compare[1] || null; saveCmp(); }
