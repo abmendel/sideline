@@ -74,6 +74,18 @@
   new MutationObserver(() => { if (!queued) { queued = true; requestAnimationFrame(run); } }).observe(document.body, { childList: true, subtree: true });
   run();
 
+  /* ---------- credit ---------- */
+  const credit = document.createElement('div');
+  credit.className = 'credit';
+  credit.textContent = 'Created by Alexander Mendel';
+  const placeCredit = () => {
+    // bottom of the sidebar on wide screens; after the content when the sidebar becomes a bottom tab bar
+    const host = window.innerWidth > 760 ? document.querySelector('aside.side') : document.querySelector('main');
+    if (host && credit.parentNode !== host) host.appendChild(credit);
+  };
+  placeCredit();
+  window.addEventListener('resize', placeCredit);
+
   /* ---------- back to top ---------- */
   const scroller = document.querySelector('main') || document.scrollingElement;
   const top = document.createElement('button'); top.id = 'toTop'; top.type = 'button'; top.setAttribute('aria-label', 'Back to top'); top.textContent = '↑';

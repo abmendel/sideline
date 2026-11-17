@@ -64,3 +64,9 @@ th.sortable:hover,th.sorted{color:var(--text)}
 .bkrow .bk b{font-weight:600}
 .bkrow .bkbest{color:var(--good);font-weight:600}
 .bkrow .sub{font-size:12px}
+
+/* created-by credit: bottom-left in the sidebar, or after the content on phones */
+.credit{font-size:11px;line-height:1.3;color:var(--dim);opacity:.75;padding:10px 12px 2px;letter-spacing:.01em}
+aside.side .credit{margin-top:auto}
+main>.credit{text-align:center;padding:4px 0 10px}
+@media (max-width:760px){main>.credit{padding-bottom:4px}}
