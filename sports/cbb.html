@@ -132,6 +132,7 @@
 const API = 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball';
 const GROUPS = 'groups=50';   // all of Division I; without it ESPN returns only ranked games
 const STANDINGS_API = 'https://site.api.espn.com/apis/v2/sports/basketball/mens-college-basketball/standings?level=3';   // by conference
+const RANK_API = `${API}/rankings`;                // AP Top 25 and the Coaches Poll
 const ATHLETE_API = 'https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes';
 const LIVE_MS = 15000, IDLE_MS = 60000;
 
@@ -855,7 +856,7 @@ const state = {
   openId: null, detail: null, boxTeam: 0, showAllPlays: false,
   replay: { i: null, playing: false, speed: 1, timer: null, follow: true },
   shot: { team: 'both', player: 'all' },
-  standings: null, standSort: {}, news: null, mine: null, todayEvents: [],
+  standings: null, standSort: {}, standConf: null, poll: 'ap', news: null, mine: null, todayEvents: [],
   filter: 'all', search: ''
 };
 function setConn(ok, msg) { $('#connDot').className = 'dot ' + (ok ? (state.auto ? 'on' : '') : 'err'); $('#updated').textContent = msg; }
@@ -1190,38 +1191,74 @@ function winPctOf(rec) { const m = String(rec).match(/^(\d+)-(\d+)/); if (!m) re
 async function loadStandings(silent) {
   if (!silent && !state.standings) $('#standings').innerHTML = '<div class="skeleton" style="height:560px"></div><div class="skeleton" style="height:560px"></div>';
   try {
-    const data = await getJSON(STANDINGS_API);
+    const [data, polls] = await Promise.all([getJSON(STANDINGS_API), safe(cached(RANK_API, 6e5))]);
     let confs = data.children || [];
     if (!confs.length && data.standings) confs = [{ name: 'League', standings: data.standings }];
-    state.standings = { confs, season: data.seasons?.[0]?.displayName || data.season?.displayName || confs[0]?.standings?.seasonDisplayName || '' };
+    const ranks = (polls?.rankings || []).filter(r => (r.ranks || []).length);
+    state.standings = { confs, polls: ranks, week: ranks[0]?.occurrence?.displayValue || '', season: data.seasons?.[0]?.displayName || data.season?.displayName || confs[0]?.standings?.seasonDisplayName || '' };
     state.error = null; state.lastOk = Date.now();
     renderStandings();
   } catch (e) { fail(e); if (!state.standings) renderError('#standings', e, () => loadStandings()); }
 }
+const confKey = c => String(c.id ?? c.name ?? '');
+const confTeams = c => c.standings?.entries || [];
+function defaultConf(confs, poll) {                 // your team's conference, or the one with the most ranked teams
+  const mine = confs.find(c => confTeams(c).some(e => isFavTeam(e.team?.id)));
+  if (mine) return confKey(mine);
+  const ranked = new Set((poll?.ranks || []).map(r => String(r.team?.id)));
+  let best = confs[0], most = -1;
+  confs.forEach(c => { const n = confTeams(c).filter(e => ranked.has(String(e.team?.id))).length; if (n > most) { most = n; best = c; } });
+  return confKey(best || {});
+}
+function pollPanel(poll, polls, week) {
+  if (!poll) return `<div class="panel glass"><div class="ph"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M9 20h6M12 14v6"/></svg></span><h3>Top 25</h3></div><div class="muted" style="padding:10px 0">Rankings aren't available right now.</div></div>`;
+  const rows = (poll.ranks || []).map(r => {
+    const prev = num(r.previous), mv = prev > 0 ? prev - r.current : null;
+    const move = prev === 0 ? '<span class="sub">NR</span>' : mv === 0 ? '<span class="sub">—</span>' : `<span class="${mv > 0 ? 'pos' : 'neg'}">${mv > 0 ? '▲' : '▼'}${Math.abs(mv)}</span>`;
+    return `<tr class="${isFavTeam(r.team?.id) ? 'myteam' : ''}"><td><div class="teamcell"><span class="seed">${r.current}</span>${logoImg(r.team)}<span>${esc(r.team?.location || r.team?.name || r.team?.abbreviation || '')}${r.firstPlaceVotes ? `<small class="fpv" title="${esc(r.firstPlaceVotes)} first-place votes">(${esc(r.firstPlaceVotes)})</small>` : ''}${isFavTeam(r.team?.id) ? ' ★' : ''}</span></div></td>
+      <td>${esc(r.recordSummary || '—')}</td><td>${esc(num(r.points) != null ? Math.round(num(r.points)) : '—')}</td><td>${move}</td></tr>`;
+  }).join('');
+  const pick = polls.length > 1 ? `<select id="pollPick" aria-label="Poll">${polls.map(p => `<option value="${esc(p.type)}" ${p.type === poll.type ? 'selected' : ''}>${esc(p.shortName || p.name)}</option>`).join('')}</select>` : '';
+  return `<div class="panel glass"><div class="ph"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3M9 20h6M12 14v6"/></svg></span><h3>Top 25</h3><span class="sub">${esc(week || '')}</span><span class="spacer"></span>${pick}</div>
+    <div class="tbl-wrap"><table class="toptbl"><thead><tr><th>Team</th><th>W-L</th><th>PTS</th><th>+/−</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin:10px 0 0">${esc(poll.name || 'Poll')} · points are the voters' ballot total, (n) is first-place votes, +/− is the move since last week.</p></div>`;
+}
+function confPanel(confs, conf) {
+  const key = confKey(conf);
+  const entries = [...confTeams(conf)];
+  const seedOf = e => num(dv(statVal(e, 'playoffSeed'))) ?? 99;
+  entries.sort((a, b) => seedOf(a) - seedOf(b) || (num(dv(statVal(b, 'winPercent'))) - num(dv(statVal(a, 'winPercent')))));
+  entries.forEach((e, i) => e._rank = i + 1);
+  const sort = state.standSort[key];
+  if (sort) { const col = COLS.find(c => c.k === sort.k); const val = e => col.n ? num(dv(col.get(e))) : winPctOf(dv(col.get(e))); entries.sort((a, b) => sort.dir * ((val(a) ?? -1e9) - (val(b) ?? -1e9))); }
+  const rows = entries.map(e => {
+    const r = e._rank;
+    return `<tr class="${r === 1 ? 'po' : ''} ${isFavTeam(e.team?.id) ? 'myteam' : ''}"><td><div class="teamcell"><span class="seed">${r}</span>${logoImg(e.team)}<span>${esc(e.team?.shortDisplayName || e.team?.displayName)}${isFavTeam(e.team?.id) ? ' ★' : ''}</span></div></td>
+      ${COLS.map(c => { const v = dv(c.get(e)); let k = ''; if (c.k === 'DIFF') { const n = num(v); k = n > 0 ? 'pos' : n < 0 ? 'neg' : ''; } if (c.k === 'STRK') k = /^W/.test(v) ? 'pos' : /^L/.test(v) ? 'neg' : ''; const out = c.k === 'DIFF' && num(v) > 0 && !String(v).startsWith('+') ? '+' + v : v; return `<td class="${k}">${esc(out)}</td>`; }).join('')}</tr>`;
+  }).join('');
+  const mineFirst = c => confTeams(c).some(e => isFavTeam(e.team?.id));
+  const list = [...confs.filter(mineFirst), ...confs.filter(c => !mineFirst(c))];
+  const opts = list.map(c => `<option value="${esc(confKey(c))}" ${confKey(c) === key ? 'selected' : ''}>${mineFirst(c) ? '★ ' : ''}${esc(c.name || 'Conference')}</option>`).join('');
+  return `<div class="panel glass"><div class="ph"><span class="pic">${IC.st}</span><h3>Conference</h3><span class="spacer"></span><select id="confPick" aria-label="Conference">${opts}</select></div>
+    <div class="tbl-wrap"><table data-conf="${esc(key)}"><thead><tr><th>Team</th>${COLS.map(c => `<th class="sortable ${sort?.k === c.k ? 'sorted' : ''}" data-k="${c.k}">${c.k}${sort?.k === c.k ? (sort.dir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+    <p class="note" style="margin:10px 0 0">${esc(entries.length)} teams · ${confTeams(conf).some(e => isFavTeam(e.team?.id)) ? 'your team is highlighted · ' : ''}click a column to sort</p></div>`;
+}
 function renderStandings() {
   if (!state.standings) return;
-  const { confs, season } = state.standings;
+  const { confs, season, polls = [], week } = state.standings;
   $('#standSeason').textContent = season ? `Season ${season}` : 'Current season';
-  $('#standings').innerHTML = confs.map((conf, ci) => {
-    const key = 'C' + ci;
-    const entries = [...(conf.standings?.entries || [])];
-    const seedOf = e => num(dv(statVal(e, 'playoffSeed'))) ?? 99;
-    entries.sort((a, b) => seedOf(a) - seedOf(b) || (num(dv(statVal(b, 'winPercent'))) - num(dv(statVal(a, 'winPercent')))));
-    entries.forEach((e, i) => e._rank = i + 1);
-    const sort = state.standSort[key];
-    if (sort) { const col = COLS.find(c => c.k === sort.k); const val = e => col.n ? num(dv(col.get(e))) : winPctOf(dv(col.get(e))); entries.sort((a, b) => sort.dir * ((val(a) ?? -1e9) - (val(b) ?? -1e9))); }
-    const rows = entries.map(e => {
-      const r = e._rank;
-      return `<tr class="${r === 1 ? 'po' : ''} ${isFavTeam(e.team?.id) ? 'myteam' : ''}"><td><div class="teamcell"><span class="seed">${r}</span>${logoImg(e.team)}<span>${esc(e.team?.shortDisplayName || e.team?.displayName)}${isFavTeam(e.team?.id) ? ' ★' : ''}</span></div></td>
-        ${COLS.map(c => { const v = dv(c.get(e)); let k = ''; if (c.k === 'DIFF') { const n = num(v); k = n > 0 ? 'pos' : n < 0 ? 'neg' : ''; } if (c.k === 'STRK') k = /^W/.test(v) ? 'pos' : /^L/.test(v) ? 'neg' : ''; const out = c.k === 'DIFF' && num(v) > 0 && !String(v).startsWith('+') ? '+' + v : v; return `<td class="${k}">${esc(out)}</td>`; }).join('')}</tr>`;
-    }).join('');
-    return `<div class="panel glass"><div class="ph"><span class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><h3>${esc(conf.name || 'Conference')}</h3><span class="sub">${entries.length} teams</span></div>
-      <div class="tbl-wrap"><table data-conf="${key}"><thead><tr><th>Team</th>${COLS.map(c => `<th class="sortable ${sort?.k === c.k ? 'sorted' : ''}" data-k="${c.k}">${c.k}${sort?.k === c.k ? (sort.dir > 0 ? ' ↑' : ' ↓') : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div></div>`;
-  }).join('');
+  if (!confs.length) { $('#standings').innerHTML = '<div class="muted">No standings available right now.</div>'; return; }
+  const poll = polls.find(p => p.type === state.poll) || polls[0];
+  let key = state.standConf;
+  if (!key || !confs.some(c => confKey(c) === key)) key = defaultConf(confs, poll);
+  const conf = confs.find(c => confKey(c) === key) || confs[0];
+  $('#standings').innerHTML = pollPanel(poll, polls, week) + confPanel(confs, conf);
+  const cp = $('#confPick'); if (cp) cp.onchange = () => { state.standConf = cp.value; renderStandings(); };
+  const pp = $('#pollPick'); if (pp) pp.onchange = () => { state.poll = pp.value; renderStandings(); };
   $$('#standings th.sortable').forEach(th => th.onclick = () => {
-    const key = th.closest('table').dataset.conf, k = th.dataset.k;
-    const col = COLS.find(c => c.k === k), cur = state.standSort[key], firstDir = col.asc ? 1 : -1;
-    state.standSort[key] = !cur || cur.k !== k ? { k, dir: firstDir } : cur.dir === firstDir ? { k, dir: -firstDir } : null;
+    const k2 = th.closest('table').dataset.conf, k = th.dataset.k;
+    const col = COLS.find(c => c.k === k), cur = state.standSort[k2], firstDir = col.asc ? 1 : -1;
+    state.standSort[k2] = !cur || cur.k !== k ? { k, dir: firstDir } : cur.dir === firstDir ? { k, dir: -firstDir } : null;
     renderStandings();
   });
 }

@@ -876,3 +876,5 @@ textarea.dataarea{width:100%;min-height:90px;border-radius:10px;background:rgba(
 .chip-team i{font-style:normal;color:var(--muted);font-size:11px}
 .chip-team:hover{background:rgba(var(--acc-rgb),.24)}.chip-team:hover i{color:var(--text)}
 .mfoot{display:flex;align-items:center;gap:10px;margin-top:14px;position:sticky;bottom:-22px;padding:12px 0;background:linear-gradient(to top,var(--bg) 60%,transparent)}
+.toptbl .fpv{color:var(--dim);font-weight:400;margin-left:5px}
+.toptbl td:first-child{width:100%}
