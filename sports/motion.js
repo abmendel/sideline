@@ -153,6 +153,33 @@
   const NUMS = '.tile .v, .score, .mc-tiles b, .ptot b, .ringtile b, .mptot b, .ring .rv, .tot b, .probnums span, .cb .lbl b, .pp b, .ocell .v, .mc-bars em, .spark em';
 
   const busy = el => el.getAnimations && el.getAnimations().some(a => a.playState === 'running' || a.playState === 'pending');
+
+  /* ---------- boxes below the fold wait, then ease in as you scroll to them ---------- */
+  const SCROLL_OK = 'IntersectionObserver' in window;
+  let batch = 0, batchAt = 0;
+  const show = el => {
+    el.classList.remove('sl-off');
+    const now = performance.now();
+    if (now - batchAt > 140) batch = 0;                     // a new wave of boxes starts its stagger again
+    batchAt = now;
+    const delay = Math.min(batch++ * 55, 330);
+    rise(el, delay);
+    if (el.matches(NUMS)) countUp(el, delay);
+    el.querySelectorAll(NUMS).forEach(x => countUp(x, delay));
+    fill(el, delay);
+  };
+  const io = SCROLL_OK ? new IntersectionObserver(entries => {
+    entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+      .forEach(e => { io.unobserve(e.target); show(e.target); });
+  }, { rootMargin: '0px 0px -6% 0px', threshold: 0 }) : null;
+  const belowFold = el => { const r = el.getBoundingClientRect(); return r.top > (window.innerHeight || 0) * .96 && (r.width || r.height); };
+  function arm(el) {
+    if (!io) return false;
+    el.classList.add('sl-off');
+    if (el.tagName === 'TR') el.classList.add('sl-row');
+    io.observe(el);
+    return true;
+  }
   function reveal(nodes, again) {
     const roots = [];
     nodes.forEach(n => {
@@ -170,6 +197,7 @@
       if (busy(el)) return;
       seen.add(el);
       const k = keyOf(el); if (k) { if (shown.has(k)) return; shown.add(k); }
+      if (belowFold(el) && arm(el)) return;
       const delay = Math.min(order++ * 42, 620);
       rise(el, delay);
       if (el.matches(NUMS)) countUp(el, delay);
@@ -191,8 +219,11 @@
     else added.forEach(n => { if (n.nodeType === 1) n.querySelectorAll && n.querySelectorAll('.chartbox svg').forEach(svg => { svg.dataset.slDrawn = '1'; }); });
   }).observe(document.body, { childList: true, subtree: true });
 
-  // whatever was already on screen when this loaded
+  // whatever is already on the page when this loads: in view animates now, the rest waits for you to scroll
   requestAnimationFrame(() => { trackBars([main], true); reveal([...main.querySelectorAll(REVEAL)].filter(x => x.offsetParent !== null)); });
+
+  // a section that was rendered earlier and is still armed stays armed; clear everything if the tab is left
+  window.addEventListener('pagehide', () => document.querySelectorAll('.sl-off').forEach(el => el.classList.remove('sl-off')));
 
   /* ---------- drawers and sheets slide in ---------- */
   const drawerSel = '.drawer, .modal, .sheet, .moresheet';

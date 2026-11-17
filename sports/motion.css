@@ -38,6 +38,11 @@
 .side .brand:hover .mark{transform:rotate(180deg) scale(1.08)}
 .chip.clutch{animation:sl-flicker 1.6s ease-in-out infinite}
 
+/* ---------- waiting to be scrolled to ---------- */
+.sl-off{opacity:0;transform:translateY(20px) scale(.99)}
+.sl-off.sl-row{transform:translateX(-10px)}
+.sl-off,.sl-off *{animation-play-state:paused!important}
+
 /* ---------- percentage charts ---------- */
 .probbar{position:relative}
 .probbar.sl-shine::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.65) 50%,transparent 70%);animation:sl-barshine 1s ease-out both}
