@@ -19,7 +19,10 @@ const SPORTS = {
   nba: { path: 'basketball/nba', mode: 'day', K: 20, hfa: 100, carry: .25, rest: true, sd: 12, lambda: 8, seasons: 3 },
   nfl: { path: 'football/nfl', mode: 'week', K: 20, hfa: 55, carry: .33, rest: true, sd: 13.5, lambda: 8, seasons: 5 },
   mlb: { path: 'baseball/mlb', mode: 'day', K: 4, hfa: 24, carry: .33, rest: false, sd: 4.2, lambda: 20, seasons: 3 },
-  nhl: { path: 'hockey/nhl', mode: 'day', K: 8, hfa: 35, carry: .3, rest: true, sd: 2.35, lambda: 20, seasons: 3 }
+  nhl: { path: 'hockey/nhl', mode: 'day', K: 8, hfa: 35, carry: .3, rest: true, sd: 2.35, lambda: 20, seasons: 3 },
+  // college basketball: 360+ teams, so ESPN needs groups=50 to return every Division I game, and ratings
+  // carry further between seasons than the pros because programs change less than rosters suggest
+  cbb: { path: 'basketball/mens-college-basketball', groups: 50, mode: 'day', K: 24, hfa: 115, carry: .4, rest: true, sd: 11.5, lambda: 8, seasons: 3 }
 };
 /* Soccer: one model per league, three outcomes (home win, draw, away win) */
 const SOCCER = { draws: true, anyType: true, mode: 'day', K: 20, hfa: 60, carry: .3, rest: false, sd: 1.6, lambda: 20, minGames: 6, seasons: 3 };
@@ -92,21 +95,22 @@ function leagueDays(lg) {
 
 async function collect(sp, S, store, log) {
   const base = API(S.path), today = ymd(new Date()), units = [];
+  const G = S.groups ? `&groups=${S.groups}&limit=900` : '&limit=200';   // college basketball needs every Division I game
   if (S.mode === 'day') {
-    const cur = await fetchJSON(`${base}/scoreboard?limit=200`);
+    const cur = await fetchJSON(`${base}/scoreboard?limit=200${S.groups ? `&groups=${S.groups}` : ''}`);
     const curCal = leagueDays(cur?.leagues?.[0]);
     const cals = [curCal];
     for (let k = 1; k < (S.seasons || 2) && cals[cals.length - 1].length; k++) {   // walk back one season at a time
       const first = cals[cals.length - 1][0];
       const d = new Date(Date.UTC(+first.slice(0, 4), +first.slice(4, 6) - 1, +first.slice(6, 8)));
       d.setUTCDate(d.getUTCDate() - 270);
-      const prev = await fetchJSON(`${base}/scoreboard?dates=${ymd(d)}&limit=200`);
+      const prev = await fetchJSON(`${base}/scoreboard?dates=${ymd(d)}${G}`);
       cals.push(leagueDays(prev?.leagues?.[0]).filter(x => x < first));
     }
     const tmw = new Date(); tmw.setUTCDate(tmw.getUTCDate() + 1);
-    [...new Set(cals.flat())].filter(x => x <= ymd(tmw)).forEach(d => units.push({ key: d, url: `${base}/scoreboard?dates=${d}&limit=200`, day: d }));
+    [...new Set(cals.flat())].filter(x => x <= ymd(tmw)).forEach(d => units.push({ key: d, url: `${base}/scoreboard?dates=${d}${G}`, day: d }));
   } else {
-    const cur = await fetchJSON(`${base}/scoreboard?limit=200`);
+    const cur = await fetchJSON(`${base}/scoreboard?limit=200${S.groups ? `&groups=${S.groups}` : ''}`);
     const year = cur?.leagues?.[0]?.season?.year || new Date().getUTCFullYear();
     for (const y of Array.from({ length: S.seasons || 2 }, (_, i) => year - (S.seasons || 2) + 1 + i)) {
       const probe = y === year ? cur : await fetchJSON(`${base}/scoreboard?dates=${y}&seasontype=2&week=1&limit=200`);
@@ -292,9 +296,10 @@ function trainUSv2(sp, store, box, S, log, prevM) {
   });
   const T = r.tables, inRot = new Set(Object.values(teams).flatMap(t => Object.keys(t.rot || {})));
   const pick = (o, keep, round) => Object.fromEntries(Object.entries(o).filter(([id, v]) => keep(id, v)).map(([id, v]) => [id, v.map(round)]));
-  const tables = sp === 'nba' ? { players: pick(T.players, id => inRot.has(id), v => +v.toFixed(1)) }
-    : sp === 'nhl' ? { goalies: pick(T.goalies, (id, v) => v[0] >= 60, v => +v.toFixed(1)), lgSv: r4(T.lgSv) }
-    : sp === 'mlb' ? { pitchers: pick(T.pitchers, (id, v) => v[0] >= 15, v => +v.toFixed(1)), lgFip: r4(T.lgFip), cFip: r4(T.cFip) }
+  const kind = SM.kindOf(sp);
+  const tables = kind === 'nba' ? { players: pick(T.players, id => inRot.has(id), v => +v.toFixed(1)) }
+    : kind === 'nhl' ? { goalies: pick(T.goalies, (id, v) => v[0] >= 60, v => +v.toFixed(1)), lgSv: r4(T.lgSv) }
+    : kind === 'mlb' ? { pitchers: pick(T.pitchers, (id, v) => v[0] >= 15, v => +v.toFixed(1)), lgFip: r4(T.lgFip), cFip: r4(T.cFip) }
     : { qbs: pick(T.qbs, (id, v) => v[0] >= 20, v => +v.toFixed(1)), lgAny: r4(T.lgAny) };
   const snaps = Object.keys(store.snaps).length;
   return { sport: sp, version: 2, updated: new Date().toISOString(), features: r.list, w: r.w.map(v => +v.toFixed(4)), sigma: +r.sigma.toFixed(3), rest: S.rest, params: tune.P, tunedAt: tune.tunedAt,
@@ -319,7 +324,7 @@ function trainSoccerV2(lg, store, box, S, log, prevM) {
     eval: evalOf(rows, S), blend, compare: { old, new: sc, holdout }, snapshots: Object.keys(store.snaps).length, _wf: r.wf };
 }
 
-const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500 };
+const BOXCAP = { nba: 2500, nhl: 2500, mlb: 3500, nfl: 1500, cbb: 5000 };
 /* ------------------------------------------------------------------ main */
 async function run(sp, log) {
   const S = SPORTS[sp];
@@ -339,6 +344,13 @@ async function run(sp, log) {
   if (!model) { log(`${sp}: not enough games to train`); return null; }
   const wf = model._wf; delete model._wf;
   await writeJSON(`model-${sp}.json`, model);
+  if (S.groups) {                                              // college: publish the team list the page can't fetch itself (ESPN blocks browsers)
+    try {
+      const d = await fetchJSON(`${API(S.path)}/teams?limit=500`);
+      const teams = (d?.sports?.[0]?.leagues?.[0]?.teams || []).map(({ team: t }) => ({ id: String(t.id), abbreviation: t.abbreviation || '', displayName: t.displayName || t.shortDisplayName || '', shortDisplayName: t.shortDisplayName || '', color: t.color || '', logo: t.logos?.[0]?.href || '' })).filter(t => t.id && t.displayName).sort((a, b) => a.displayName.localeCompare(b.displayName));
+      if (teams.length > 100) { await writeJSON(`teams-${sp}.json`, { updated: new Date().toISOString(), teams }); log(`${sp}: ${teams.length} teams published`); }
+    } catch (e) { log(`${sp}: team list skipped — ${e.message}`); }
+  }
   try {                                                        // spreads, totals and player impact for the Analytics tab
     const A = await buildAnalytics(sp, S, store, box, model, wf, fetchJSON, S.draws ? { names: await loadNamesFor(sp) } : {});
     await writeJSON(`analytics-${sp}.json`, A);

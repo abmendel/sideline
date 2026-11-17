@@ -37,7 +37,7 @@
     nfl: ['home', 'elo', 'margin', 'form', 'rest', 'ypp', 'epa', 'qb']
   };
   const LEGACY = ['home', 'elo', 'margin', 'form', 'rest'];
-  const kindOf = sport => /^(nba|nhl|mlb|nfl)$/.test(sport) ? sport : 'soccer';
+  const kindOf = sport => sport === 'cbb' ? 'nba' : /^(nba|nhl|mlb|nfl)$/.test(sport) ? sport : 'soccer';   // college basketball uses the NBA's features
   // how likely a listed player is to sit, by injury-report status
   const SIT = s => /out|suspen|injured reserve|\bir\b/i.test(s || '') ? 1 : /doubt/i.test(s || '') ? .8 : /question|day-to-day|game.?time/i.test(s || '') ? .4 : /probable/i.test(s || '') ? .1 : 0;
 

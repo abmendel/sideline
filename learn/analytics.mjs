@@ -11,7 +11,7 @@ const day = iso => Math.floor(new Date(iso).getTime() / 864e5);
 
 /* ---------- teams and current rosters (names, logos, who plays where) ---------- */
 async function teamsOf(path, fetchJSON) {
-  const d = await fetchJSON(`${SITE(path)}/teams?limit=200`).catch(() => null), out = {};
+  const d = await fetchJSON(`${SITE(path)}/teams?limit=500`).catch(() => null), out = {};
   (d?.sports?.[0]?.leagues?.[0]?.teams || []).forEach(({ team: t }) => { out[String(t.id)] = { abbr: t.abbreviation || '', name: t.shortDisplayName || t.displayName || '', logo: t.logos?.[0]?.href || '' }; });
   return out;
 }
@@ -97,6 +97,7 @@ function spreadsBySeason(games, box, wf, kind) {
 
 /* ---------- player impact ---------- */
 function impactUS(sp, M, roster) {
+  sp = SM.kindOf(sp);
   const w = f => { const i = (M.features || []).indexOf(f); return i < 0 ? 0 : M.w[i] || 0; };
   const sig = M.sigma || 1, swing = v => r3(SM.Phi(v / sig) - .5), rows = [];
   if (sp === 'nba') {
@@ -168,7 +169,7 @@ function impactSoccer(wf, box, names, teamsMeta) {
 }
 
 export async function buildAnalytics(sp, S, store, box, model, wf, fetchJSON, extra = {}) {
-  const kind = S.draws ? 'soccer' : sp;
+  const kind = S.draws ? 'soccer' : SM.kindOf(sp);
   const teams = await teamsOf(S.path, fetchJSON);
   const spreads = spreadsBySeason(store.games, box, wf, kind);
   let players = null;

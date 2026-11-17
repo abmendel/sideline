@@ -16,7 +16,7 @@ const CORE = p => { const [s, l] = p.split('/'); return `https://sports.core.api
 const num = v => { const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : null; };
 const pair = v => { const m = /^\s*(\d+)\s*[-/]\s*(\d+)/.exec(String(v ?? '')); return m ? [+m[1], +m[2]] : [null, null]; };
 const am = v => { const n = num(typeof v === 'object' ? v?.american ?? v?.odds ?? v?.alternateDisplayValue : v); return n == null || Math.abs(n) < 100 ? null : n; };
-const kindOf = path => path.startsWith('soccer/') ? 'soccer' : path.split('/')[1];
+const kindOf = path => path.startsWith('soccer/') ? 'soccer' : path.includes('college') ? 'nba' : path.split('/')[1];
 
 export async function loadBox(sp) {
   const out = {};
@@ -39,7 +39,7 @@ async function saveBox(sp, box, games) {
 
 /* ---------- odds: summary pickcenter first, the core odds feed when that is empty ---------- */
 function oddsFromPick(pc) {
-  const list = pc || [], o = list.find(x => /draftkings/i.test(x.provider?.name || '')) || list.find(x => !/live/i.test(x.provider?.name || '')) || null;
+  const list = pc || [], o = list.find(x => /draft\s?kings/i.test(x.provider?.name || '')) || list.find(x => !/live/i.test(x.provider?.name || '')) || null;
   if (!o) return null;
   const ml = o.moneyline || {};
   const side = (k, cur) => [am(ml[k]?.open?.odds), am(ml[k]?.close?.odds) ?? am(cur)];
@@ -60,7 +60,7 @@ function oddsFromCore(items) {
 /* ---------- spreads and totals: L = [home spread open, close, total open, close] ---------- */
 const line = v => { const n = num(typeof v === 'object' ? v?.american ?? v?.alternateDisplayValue ?? v?.line : v); return n == null || Math.abs(n) > 400 ? null : n; };
 function linesFromPick(pc) {
-  const list = pc || [], o = list.find(x => /draftkings/i.test(x.provider?.name || '')) || list.find(x => !/live/i.test(x.provider?.name || '')) || null;
+  const list = pc || [], o = list.find(x => /draft\s?kings/i.test(x.provider?.name || '')) || list.find(x => !/live/i.test(x.provider?.name || '')) || null;
   if (!o) return null;
   const ps = o.pointSpread || {}, tt = o.total || {};
   const L = [line(ps.home?.open?.line), line(ps.home?.close?.line) ?? line(o.spread), line(tt.over?.open?.line), line(tt.over?.close?.line) ?? line(o.overUnder)];

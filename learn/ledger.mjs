@@ -123,9 +123,9 @@ function grade(e, ev) {
   return true;
 }
 
-async function scoreboards(path, dates) {
-  const out = [];
-  for (const d of dates) { const sb = await fetchJSON(`${API(path)}/scoreboard?dates=${d}&limit=300`); (sb?.events || []).forEach(ev => out.push(ev)); }
+async function scoreboards(path, dates, S) {
+  const out = [], g = S && S.groups ? `&groups=${S.groups}&limit=900` : '&limit=300';
+  for (const d of dates) { const sb = await fetchJSON(`${API(path)}/scoreboard?dates=${d}${g}`); (sb?.events || []).forEach(ev => out.push(ev)); }
   return out;
 }
 
@@ -136,7 +136,7 @@ async function runSport(sp, log) {
   const upcoming = [0, 1, 2].map(i => etDay(new Date(now.getTime() + i * 864e5)));
   const open = Object.values(L.picks).filter(e => !e.result && new Date(e.date) < now);
   const back = [...new Set(open.flatMap(e => [etDay(e.date), etDay(new Date(new Date(e.date).getTime() - 864e5))]))].slice(-20);
-  let evs = await scoreboards(S.path, [...new Set([...back, ...upcoming])]);
+  let evs = await scoreboards(S.path, [...new Set([...back, ...upcoming])], S);
   if (S.mode === 'week') { const cur = await fetchJSON(`${API(S.path)}/scoreboard?limit=300`); (cur?.events || []).forEach(ev => evs.push(ev)); }
   const byId = {}; evs.forEach(ev => { byId[String(ev.id)] = ev; });
   evs = Object.values(byId); LIVE = byId;
@@ -210,7 +210,7 @@ async function runSoccer(log) {
     const S = SPORTS[lg], M = await readJSON(`model-${lg}.json`, null);
     const open = Object.values(L.picks).filter(e => e.lg === lg && !e.result && new Date(e.date) < now);
     const back = [...new Set(open.flatMap(e => [etDay(e.date), etDay(new Date(new Date(e.date).getTime() - 864e5))]))].slice(-10);
-    const evs = await scoreboards(S.path, [...new Set([...back, ...upcoming])]);
+    const evs = await scoreboards(S.path, [...new Set([...back, ...upcoming])], S);
     evs.forEach(ev => { byId[String(ev.id)] = ev; lgOf[String(ev.id)] = { lg, S, M }; });
   }
   LIVE = byId;
@@ -267,7 +267,7 @@ async function runSoccer(log) {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const want = process.argv.slice(2);
-  const list = want.length ? want : ['nba', 'nfl', 'mlb', 'nhl', 'soccer'];
+  const list = want.length ? want : ['nba', 'nfl', 'mlb', 'nhl', 'cbb', 'soccer'];
   for (const sp of list) {
     try { if (sp === 'soccer') await runSoccer(console.log); else await runSport(sp, console.log); }
     catch (e) { console.error(`${sp}: failed — ${e.stack || e.message}`); process.exitCode = 1; }

@@ -5,7 +5,7 @@
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const SM = require('./predict.js');
-const { Phi, logit, sigm, fair, newTeam, features, goalProbs, FEATURES, LEGACY } = SM;
+const { Phi, logit, sigm, fair, newTeam, features, goalProbs, FEATURES, LEGACY, kindOf } = SM;
 
 const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 0;
 const dayOf = iso => String(iso).slice(0, 10).replace(/-/g, '');
@@ -94,7 +94,7 @@ function decayTables(kind, tables) {      // a new season: older player numbers 
 }
 
 export function walkUS(sport, games, box, S, P, feats) {
-  const kind = sport, list = feats || FEATURES[kind];
+  const kind = kindOf(sport), list = feats || FEATURES[kind];
   const all = Object.entries(games).map(([id, g]) => ({ id, ...g })).filter(g => (g.type === 2 || g.type === 3) && g.h && g.a);
   const count = {}; all.forEach(g => { count[g.h] = (count[g.h] || 0) + 1; count[g.a] = (count[g.a] || 0) + 1; });
   const real = id => (count[id] || 0) >= 8;
