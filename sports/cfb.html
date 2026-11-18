@@ -254,7 +254,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { this.ok = false; return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { this.ok = false; } }
 };
-try { localStorage.setItem('gridiron.test', '1'); localStorage.removeItem('gridiron.test'); } catch (e) { store.ok = false; }
+try { localStorage.setItem('tailgate.test', '1'); localStorage.removeItem('tailgate.test'); } catch (e) { store.ok = false; }
 const storageBanner = () => store.ok ? '' : `<div class="banner">⚠️ <div><b>This browser window isn’t letting the dashboard save anything.</b> Your favorites, picks and settings work for now but reset when you close it. That happens in private/incognito windows and in file previews (for example inside a chat app or email). Download the file and open it directly in Chrome, Edge, Safari or Firefox to keep them.</div></div>`;
 
 /* =====================================================================
@@ -275,7 +275,7 @@ const FANTASY_PRESETS = {
   'DraftKings-style': { PYD: 0.04, PTD: 4, INT: -1, RYD: 0.1, RTD: 6, REC: 1, REYD: 0.1, RETD: 6, FUML: -1, BON: 3 }
 };
 const SEC_NAMES = { spot: 'Spotlight game', tiles: 'Stat tiles', bet: 'Pick of the week', chart: 'Scoreboard chart' };
-const SKEY = 'gridiron.settings.v1';
+const SKEY = 'tailgate.settings.v1';
 const DEF = {
   theme: 'auto', accent: 'sunset', density: 'comfy', look: 5,
   layout: ['spot', 'tiles', 'bet', 'chart'], hidden: [],
@@ -332,13 +332,17 @@ function applyLayout() {
 /* =====================================================================
    Favorites, picks, compare (saved)
    ===================================================================== */
-const FKEY = 'gridiron.favorites.v1', PKEY = 'gridiron.picks.v1', CKEY = 'gridiron.compare.v1', AKEY = 'gridiron.alerts.v1';
-const FAV = { teams: [], players: [], ...store.get(FKEY, {}) };
+const FKEY = 'tailgate.favorites.v1', PKEY = 'tailgate.picks.v1', CKEY = 'tailgate.compare.v1', AKEY = 'tailgate.alerts.v1';
+const NS = FKEY.split('.')[0];                      // this league's own storage, stamped so another league's teams can never show up here
+const SAVED = store.get(FKEY, {});
+const FAV = SAVED.ns && SAVED.ns !== NS ? { teams: [], players: [] } : { teams: [], players: [], ...SAVED };
 if (!Array.isArray(FAV.players)) FAV.players = [];
 if (!Array.isArray(FAV.teams)) FAV.teams = [];
 if (FAV.teamId != null && !FAV.teams.length) FAV.teams = [String(FAV.teamId)];   // one favorite team became a list of them
 delete FAV.teamId;
 FAV.teams = FAV.teams.map(String);
+FAV.ns = NS;
+if (SAVED.ns && SAVED.ns !== NS) store.set(FKEY, FAV);   // another league's list: clear it out rather than leave it sitting there
 const PICKS = store.get(PKEY, {});
 const CMP = store.get(CKEY, [null, null]);
 const saveFav = () => { store.set(FKEY, FAV); updateCounts(); updateHello(); };
@@ -830,6 +834,9 @@ function pruneFavs() {                             // keep only teams and player
   const ids = new Set(TEAMS.map(t => String(t.id)));
   const teams = FAV.teams.filter(id => ids.has(id)), players = FAV.players.filter(pl => pl.teamId == null || ids.has(String(pl.teamId)));
   if (teams.length !== FAV.teams.length || players.length !== FAV.players.length) { FAV.teams = teams; FAV.players = players; saveFav(); state.mine = null; if (state.tab === 'mine') loadMine(true); }
+  let dropped = 0;                                 // and picks on games from another league, left over before each one had its own storage
+  for (const [id, p] of Object.entries(PICKS)) if (p?.home?.id && p?.away?.id && !ids.has(String(p.home.id)) && !ids.has(String(p.away.id))) { delete PICKS[id]; dropped++; }
+  if (dropped) { savePicks(); if (state.tab === 'picks') renderPicks(); }
 }
 function updateCounts() {
   const n = FAV.teams.length + FAV.players.length;
@@ -1860,7 +1867,7 @@ async function loadTeams() {
   try {                                            // every FBS team, published nightly (ESPN's own list blocks browsers)
     const r = await fetch(`../data/teams-cfb.json?t=${Math.floor(Date.now() / 864e5)}`, { cache: 'no-store' });
     const j = r.ok ? await r.json() : null;
-    if (j && j.teams && j.teams.length > 60) { TEAMS = j.teams.map(t => ({ ...t, id: String(t.id) })); TEAMS_LIVE = true; return TEAMS; }
+    if (j && j.teams && j.teams.length > 60) { TEAMS = j.teams.map(t => ({ ...t, id: String(t.id) })); TEAMS_LIVE = true; pruneFavs(); return TEAMS; }
   } catch (e) { /* fall through */ }
   try {
     const d = await cached(`${API}/teams?limit=900&${GROUPS}`, 864e5);

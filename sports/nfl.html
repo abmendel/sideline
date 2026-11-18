@@ -326,12 +326,16 @@ function applyLayout() {
    Favorites, picks, compare (saved)
    ===================================================================== */
 const FKEY = 'gridiron.favorites.v1', PKEY = 'gridiron.picks.v1', CKEY = 'gridiron.compare.v1', AKEY = 'gridiron.alerts.v1';
-const FAV = { teams: [], players: [], ...store.get(FKEY, {}) };
+const NS = FKEY.split('.')[0];                      // this league's own storage, stamped so another league's teams can never show up here
+const SAVED = store.get(FKEY, {});
+const FAV = SAVED.ns && SAVED.ns !== NS ? { teams: [], players: [] } : { teams: [], players: [], ...SAVED };
 if (!Array.isArray(FAV.players)) FAV.players = [];
 if (!Array.isArray(FAV.teams)) FAV.teams = [];
 if (FAV.teamId != null && !FAV.teams.length) FAV.teams = [String(FAV.teamId)];   // one favorite team became a list of them
 delete FAV.teamId;
 FAV.teams = FAV.teams.map(String);
+FAV.ns = NS;
+if (SAVED.ns && SAVED.ns !== NS) store.set(FKEY, FAV);   // another league's list: clear it out rather than leave it sitting there
 const PICKS = store.get(PKEY, {});
 const CMP = store.get(CKEY, [null, null]);
 const saveFav = () => { store.set(FKEY, FAV); updateCounts(); updateHello(); };
@@ -822,6 +826,9 @@ function pruneFavs() {                             // keep only teams and player
   const ids = new Set(TEAMS.map(t => String(t.id)));
   const teams = FAV.teams.filter(id => ids.has(id)), players = FAV.players.filter(pl => pl.teamId == null || ids.has(String(pl.teamId)));
   if (teams.length !== FAV.teams.length || players.length !== FAV.players.length) { FAV.teams = teams; FAV.players = players; saveFav(); state.mine = null; if (state.tab === 'mine') loadMine(true); }
+  let dropped = 0;                                 // and picks on games from another league, left over before each one had its own storage
+  for (const [id, p] of Object.entries(PICKS)) if (p?.home?.id && p?.away?.id && !ids.has(String(p.home.id)) && !ids.has(String(p.away.id))) { delete PICKS[id]; dropped++; }
+  if (dropped) { savePicks(); if (state.tab === 'picks') renderPicks(); }
 }
 function updateCounts() {
   const n = FAV.teams.length + FAV.players.length;
