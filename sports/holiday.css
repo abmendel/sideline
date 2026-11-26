@@ -27,12 +27,16 @@ html.xmas body{
    exactly one tile per cycle, so the loop is seamless with no reflow:
    only transform animates, and the whole thing is pointer-transparent.
    White flakes disappear on a white card, so in daylight they are a cool
-   grey-blue instead — the same snow, lit differently. */
-html.xmas{--xflake:155,178,206;--xsnow-op:.85}
+   grey-blue instead — the same snow, lit differently.
+
+   It sits at z-index -1, on the color field and under every card, so it
+   falls in the gutters and shows only as a soft drift through the frosted
+   panes. Nothing ever moves behind a number you are trying to read. */
+html.xmas{--xflake:120,150,190;--xsnow-op:1}
 [data-theme=dark].xmas,:root.xmas:not([data-theme]){--xflake:255,255,255;--xsnow-op:1}
 @media (prefers-color-scheme:dark){:root.xmas:not([data-theme]){--xflake:255,255,255;--xsnow-op:1}}
-[data-theme=light].xmas{--xflake:155,178,206;--xsnow-op:.85}
-.xsnow{position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden;contain:strict;opacity:var(--xsnow-op)}
+[data-theme=light].xmas{--xflake:120,150,190;--xsnow-op:1}
+.xsnow{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict;opacity:var(--xsnow-op)}
 .xsnow i{
   position:absolute;left:-10px;right:-10px;top:-140px;bottom:-140px;
   background-repeat:repeat;

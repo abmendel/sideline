@@ -30,10 +30,15 @@
 
   const build = () => {
     if (document.querySelector('.xsnow')) return;
-    const snow = document.createElement('div');
-    snow.className = 'xsnow';
-    snow.setAttribute('aria-hidden', 'true');
-    snow.innerHTML = '<i></i><i></i><i></i>';
+    // the hub is a frame around a sport page, which draws its own snow
+    const isShell = !!document.querySelector('iframe.sport');
+    let snow = null;
+    if (!isShell) {
+      snow = document.createElement('div');
+      snow.className = 'xsnow';
+      snow.setAttribute('aria-hidden', 'true');
+      snow.innerHTML = '<i></i><i></i><i></i>';
+    }
 
     const lights = document.createElement('div');
     lights.className = 'xlights';
@@ -47,7 +52,7 @@
     }
     lights.innerHTML = html;
 
-    document.body.append(snow, lights);
+    document.body.append(...(snow ? [snow, lights] : [lights]));
   };
 
   if (document.body) build();
