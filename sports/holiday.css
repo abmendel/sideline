@@ -1,0 +1,93 @@
+/* =====================================================================
+   Sideline · holiday theme
+   Decoration only, and only while html carries .xmas (holiday.js decides,
+   by date). Nothing here touches layout, type scale, or the colors that
+   carry meaning — live red, good/bad, home/away and the user's accent all
+   stay exactly as they are, because a scoreboard where red means "festive"
+   is a scoreboard you can't read.
+   ===================================================================== */
+
+/* a cool evergreen-and-cranberry wash behind the cards, kept faint so the
+   grouped surfaces still sit clearly on top of it */
+html.xmas body{
+  background-image:
+    radial-gradient(1100px 560px at 12% -12%, rgba(16,94,58,.11), transparent 62%),
+    radial-gradient(900px 520px at 88% -8%, rgba(167,29,42,.10), transparent 62%);
+  background-attachment:fixed;
+  background-repeat:no-repeat;
+}
+[data-theme=dark].xmas body, :root.xmas:not([data-theme]) body{
+  background-image:
+    radial-gradient(1100px 560px at 12% -12%, rgba(32,140,86,.16), transparent 62%),
+    radial-gradient(900px 520px at 88% -8%, rgba(214,46,62,.13), transparent 62%);
+}
+
+/* ---------- snow ---------- */
+/* Three drifting layers. Each tile is 140px tall and each layer travels
+   exactly one tile per cycle, so the loop is seamless with no reflow:
+   only transform animates, and the whole thing is pointer-transparent.
+   White flakes disappear on a white card, so in daylight they are a cool
+   grey-blue instead — the same snow, lit differently. */
+html.xmas{--xflake:155,178,206;--xsnow-op:.85}
+[data-theme=dark].xmas,:root.xmas:not([data-theme]){--xflake:255,255,255;--xsnow-op:1}
+@media (prefers-color-scheme:dark){:root.xmas:not([data-theme]){--xflake:255,255,255;--xsnow-op:1}}
+[data-theme=light].xmas{--xflake:155,178,206;--xsnow-op:.85}
+.xsnow{position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden;contain:strict;opacity:var(--xsnow-op)}
+.xsnow i{
+  position:absolute;left:-10px;right:-10px;top:-140px;bottom:-140px;
+  background-repeat:repeat;
+  animation:xfall linear infinite;
+  will-change:transform;
+}
+.xsnow i:nth-child(1){
+  background-image:radial-gradient(circle at 20% 24%, rgba(var(--xflake),.85) 1.5px, transparent 2px),
+                   radial-gradient(circle at 72% 68%, rgba(var(--xflake),.6) 1.1px, transparent 1.6px);
+  background-size:140px 140px;animation-duration:17s;opacity:.5;
+}
+.xsnow i:nth-child(2){
+  background-image:radial-gradient(circle at 48% 12%, rgba(var(--xflake),.8) 2.1px, transparent 2.6px),
+                   radial-gradient(circle at 12% 76%, rgba(var(--xflake),.5) 1.5px, transparent 2px);
+  background-size:200px 140px;animation-duration:11s;opacity:.45;
+}
+.xsnow i:nth-child(3){
+  background-image:radial-gradient(circle at 60% 40%, rgba(var(--xflake),.95) 2.6px, transparent 3.2px);
+  background-size:320px 140px;animation-duration:7.5s;opacity:.35;filter:blur(.4px);
+}
+@keyframes xfall{from{transform:translate3d(0,0,0)}to{transform:translate3d(0,140px,0)}}
+/* a slow sway so it reads as weather rather than a falling grid */
+.xsnow{animation:xsway 9s ease-in-out infinite alternate}
+@keyframes xsway{from{transform:translateX(-10px)}to{transform:translateX(10px)}}
+
+/* ---------- string of lights under the top edge ---------- */
+.xlights{position:fixed;top:0;left:0;right:0;height:13px;z-index:70;pointer-events:none}
+.xlights::before{                                  /* the cord */
+  content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,rgba(28,58,40,.55),rgba(28,58,40,.3));
+}
+.xlights i{
+  position:absolute;top:1px;width:5px;height:7px;border-radius:0 0 50% 50%/0 0 65% 65%;
+  animation:xtwinkle 3.2s ease-in-out infinite;
+}
+@keyframes xtwinkle{0%,100%{opacity:1}50%{opacity:.42}}
+.xlights i::before{content:"";position:absolute;inset:-3px;border-radius:50%;background:inherit;filter:blur(3px);opacity:.45}
+
+/* ---------- a sprig by the wordmark ---------- */
+html.xmas .brand{position:relative}
+html.xmas .brand::after{
+  content:"🎄";font-size:11px;line-height:1;margin-left:6px;
+  filter:saturate(.92);vertical-align:2px;
+}
+/* the hub's own title bar */
+html.xmas .hubtitle::after, html.xmas .hname::after{content:" 🎄";font-size:11px}
+
+/* ---------- restraint ---------- */
+@media (prefers-reduced-motion:reduce){
+  .xsnow,.xsnow i,.xlights i{animation:none!important}
+  .xsnow{opacity:.45}
+}
+@media print{.xsnow,.xlights{display:none}}
+/* a phone has less room and a smaller battery: thin the snow, keep the lights */
+@media (max-width:700px){
+  .xsnow i:nth-child(2){display:none}
+  .xsnow i:nth-child(1){opacity:.42}
+}

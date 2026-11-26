@@ -6,6 +6,7 @@
 <title>Sideline · Live Sports</title>
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="sports/holiday.css">
 <style>
   :root{color-scheme:light dark;--bg:#eef0f6;--dim:#6e6e76;--acc:#c2410c}
   @media (prefers-color-scheme:dark){:root:not(.light){--bg:#0b0b10;--dim:#98989f;--acc:#ff8a3d}}
@@ -149,5 +150,6 @@ window.addEventListener('hashchange', () => { if (takeSync()) return; show(locat
 show(byId(location.hash.slice(1)) ? location.hash.slice(1) : byId(store.get('hub.sport')) ? store.get('hub.sport') : SPORTS[0].id);
 })();
 </script>
+<script src="sports/holiday.js"></script>
 </body>
 </html>
